@@ -20,6 +20,7 @@ import { useToast } from "@/hooks/use-toast"
 import { enhancePromptAction, createAgentAction } from "@/app/actions"
 import type { Agent, AgentTemplate } from "@/types"
 import { useLocalStorage } from "@/hooks/use-local-storage"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 const templates: AgentTemplate[] = [
   { name: 'Sales Agent', description: 'Handles inbound sales inquiries and qualifies leads.', icon: ShoppingCart, prompt: 'An AI agent that acts as a friendly and knowledgeable sales representative for a software company.' },
