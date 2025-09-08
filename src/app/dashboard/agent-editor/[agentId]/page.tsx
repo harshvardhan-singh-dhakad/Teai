@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { notFound, useRouter } from 'next/navigation'
+import { notFound, useRouter, useParams } from 'next/navigation'
 import { ArrowLeft, Check, Copy, ExternalLink, HardDriveUpload, Settings, Share, Webhook } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -28,8 +28,9 @@ import { AssistantChatbot } from "@/components/assistant-chatbot"
 import { useToast } from "@/hooks/use-toast"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
-export default function AgentEditorPage({ params }: { params: { agentId: string } }) {
+export default function AgentEditorPage() {
   const router = useRouter()
+  const params = useParams()
   const { toast } = useToast()
   const [agents, setAgents] = useLocalStorage<Agent[]>("agents", [])
   const [agent, setAgent] = useState<Agent | undefined>(undefined)
