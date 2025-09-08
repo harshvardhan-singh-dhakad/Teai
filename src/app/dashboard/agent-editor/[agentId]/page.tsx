@@ -1,9 +1,10 @@
 
+
 "use client"
 
 import { useEffect, useState } from "react"
 import { notFound, useRouter, useParams } from 'next/navigation'
-import { ArrowLeft, Check, Copy, ExternalLink, HardDriveUpload, Settings, Share, Webhook } from "lucide-react"
+import { ArrowLeft, Check, Copy, ExternalLink, HardDriveUpload, Settings, Share, Webhook, PlusCircle, MessageSquare, Mic, GitBranch } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -179,9 +180,47 @@ export default function AgentEditorPage() {
                     <Label htmlFor="agent-description">Description</Label>
                     <Textarea id="agent-description" value={agent.description} onChange={e => updateAgent({ description: e.target.value })} />
                   </div>
-                   <div className="grid gap-2">
-                    <Label htmlFor="agent-flow">Conversation Flow</Label>
-                    <Textarea id="agent-flow" className="min-h-64 font-code" value={agent.conversationFlow} onChange={e => updateAgent({ conversationFlow: e.target.value })} />
+                  <div className="grid gap-2">
+                    <Label>Conversation Flow</Label>
+                     <div className="p-4 border-2 border-dashed rounded-lg min-h-64 flex flex-col items-center justify-center text-center">
+                        <div className="space-y-4">
+                           <Card className="w-80 mx-auto">
+                             <CardContent className="p-4">
+                                <div className="flex items-center gap-3">
+                                  <MessageSquare className="h-5 w-5 text-primary"/>
+                                  <div className="text-left">
+                                      <p className="font-medium">Welcome Message</p>
+                                      <p className="text-sm text-muted-foreground">"Hello, how can I help?"</p>
+                                  </div>
+                                </div>
+                             </CardContent>
+                           </Card>
+                           <div className="flex justify-center">
+                              <div className="h-10 w-px bg-border"/>
+                           </div>
+                            <Card className="w-80 mx-auto">
+                             <CardContent className="p-4">
+                                <div className="flex items-center gap-3">
+                                  <Mic className="h-5 w-5 text-primary"/>
+                                  <div className="text-left">
+                                      <p className="font-medium">Listen for Response</p>
+                                      <p className="text-sm text-muted-foreground">Capture user's reply</p>
+                                  </div>
+                                </div>
+                             </CardContent>
+                           </Card>
+                             <div className="flex justify-center">
+                              <div className="h-10 w-px bg-border"/>
+                           </div>
+                           <Button variant="outline" size="sm">
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            Add Step
+                           </Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-8">
+                            This is a visual placeholder. A full node-based editor is coming soon.
+                        </p>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
