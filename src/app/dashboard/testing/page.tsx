@@ -1,5 +1,4 @@
 
-
 "use client"
 
 import { useState, useEffect, useTransition, useRef } from "react"
@@ -7,14 +6,14 @@ import { useSearchParams } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Phone, Send, Volume2 } from "lucide-react"
+import { Phone, Send, Volume2, PhoneOff, Mic } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
 import { Label } from "@/components/ui/label"
 import { useLocalStorage } from "@/hooks/use-local-storage"
 import type { Agent, ChatMessage } from "@/types"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { getAssistantResponse, textToSpeechAction } from "@/app/actions"
+import { getAssistantResponse, textToSpeechAction, speechToTextAction } from "@/app/actions"
 import { useToast } from "@/hooks/use-toast"
 
 export default function TestingPage() {
@@ -25,7 +24,11 @@ export default function TestingPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState("")
   const [isThinking, startTransition] = useTransition()
+  const [isRecording, setIsRecording] = useState(false)
+  
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const audioChunksRef = useRef<Blob[]>([])
   
   const usage = 85 // Example usage percentage
   
@@ -57,6 +60,79 @@ export default function TestingPage() {
     }
   }, [selectedAgent])
 
+  const processAudio = async (audioBlob: Blob) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(audioBlob);
+    reader.onloadend = async () => {
+        const base64Audio = reader.result as string;
+        
+        startTransition(async () => {
+            try {
+                // 1. Speech-to-Text
+                const { text: transcribedText } = await speechToTextAction({ audio: base64Audio, model: selectedAgent?.configurations?.sttModel || 'default' });
+                setMessages(prev => [...prev, { role: 'user', content: transcribedText }]);
+
+                // 2. Get AI response
+                const { answer } = await getAssistantResponse({ question: transcribedText });
+                setMessages(prev => [...prev, { role: 'assistant', content: answer }]);
+
+                // 3. Text-to-Speech
+                const { audio: audioResponse } = await textToSpeechAction({ text: answer, voice: selectedAgent?.configurations?.ttsModel });
+                
+                if (audioRef.current) {
+                  audioRef.current.src = audioResponse;
+                  audioRef.current.play().catch(e => console.error("Audio playback failed:", e));
+                }
+
+            } catch (error) {
+                console.error("Error in conversation cycle:", error);
+                toast({ title: "Error", description: "An error occurred during the conversation.", variant: "destructive" });
+            }
+        });
+    };
+  }
+
+  const startRecording = async () => {
+      try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          mediaRecorderRef.current = new MediaRecorder(stream);
+          audioChunksRef.current = [];
+
+          mediaRecorderRef.current.ondataavailable = event => {
+              audioChunksRef.current.push(event.data);
+          };
+
+          mediaRecorderRef.current.onstop = () => {
+              const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+              processAudio(audioBlob);
+              stream.getTracks().forEach(track => track.stop()); // Stop microphone access
+          };
+
+          mediaRecorderRef.current.start();
+          setIsRecording(true);
+          toast({ title: "Recording Started", description: "Speak now, the agent is listening." });
+      } catch (err) {
+          toast({ title: "Microphone Error", description: "Could not access the microphone. Please check permissions.", variant: "destructive" });
+          console.error("Microphone access error:", err);
+      }
+  };
+
+  const stopRecording = () => {
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+          mediaRecorderRef.current.stop();
+          setIsRecording(false);
+          toast({ title: "Recording Stopped", description: "Processing your response..." });
+      }
+  };
+
+  const handleCallButtonClick = () => {
+    if (isRecording) {
+      stopRecording();
+    } else {
+      startRecording();
+    }
+  }
+
 
   const handleSendMessage = () => {
     if (!input.trim() || !selectedAgent) return
@@ -68,14 +144,11 @@ export default function TestingPage() {
 
     startTransition(async () => {
       try {
-        // 1. Get text response from the agent
         const { answer } = await getAssistantResponse({ question: currentInput });
         setMessages(prev => [...prev, { role: 'assistant', content: answer }]);
 
-        // 2. Convert the response to speech
         const { audio } = await textToSpeechAction({ text: answer, voice: selectedAgent.configurations?.ttsModel });
         
-        // 3. Play the audio
         if (audioRef.current) {
           audioRef.current.src = audio;
           audioRef.current.play().catch(e => console.error("Audio playback failed:", e));
@@ -131,13 +204,13 @@ export default function TestingPage() {
                             </div>
                         </div>
                     ))}
-                    {isThinking && (
+                    {(isThinking || isRecording) && (
                       <div className="flex items-start gap-3">
                           <Avatar className="h-8 w-8">
                               <AvatarFallback>AI</AvatarFallback>
                           </Avatar>
-                          <div className="rounded-lg p-3 text-sm bg-background animate-pulse">
-                              Thinking...
+                          <div className={`rounded-lg p-3 text-sm bg-background ${isThinking ? 'animate-pulse' : ''}`}>
+                              {isRecording ? <div className="flex items-center gap-2 text-red-500"><Mic className="h-4 w-4 animate-pulse" /> Listening...</div> : 'Thinking...'}
                           </div>
                       </div>
                     )}
@@ -148,19 +221,18 @@ export default function TestingPage() {
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                        disabled={!selectedAgent || isThinking}
+                        disabled={!selectedAgent || isThinking || isRecording}
                     />
-                    <Button size="icon" aria-label="Send message" onClick={handleSendMessage} disabled={!selectedAgent || isThinking}>
+                    <Button size="icon" aria-label="Send message" onClick={handleSendMessage} disabled={!selectedAgent || isThinking || isRecording}>
                         <Send className="h-4 w-4" />
                     </Button>
                 </div>
             </CardContent>
             <CardFooter className="border-t pt-6 flex items-center justify-between">
-                <Button disabled={!selectedAgent}>
-                    <Phone className="mr-2 h-4 w-4" />
-                    Start Call
+                <Button onClick={handleCallButtonClick} disabled={!selectedAgent || isThinking} variant={isRecording ? 'destructive' : 'default'}>
+                    {isRecording ? <><PhoneOff className="mr-2 h-4 w-4" />Stop Call</> : <><Phone className="mr-2 h-4 w-4" />Start Call</>}
                 </Button>
-                <Button variant="outline" size="icon" onClick={playLastAgentMessage} disabled={isThinking || messages.filter(m => m.role === 'assistant').length === 0}>
+                <Button variant="outline" size="icon" onClick={playLastAgentMessage} disabled={isThinking || isRecording || messages.filter(m => m.role === 'assistant').length === 0}>
                     <Volume2 className="h-4 w-4" />
                     <span className="sr-only">Play last message</span>
                 </Button>
@@ -211,5 +283,3 @@ export default function TestingPage() {
     </div>
   )
 }
-
-    

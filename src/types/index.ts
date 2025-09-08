@@ -40,6 +40,22 @@ export const TextToSpeechOutputSchema = z.object({
 });
 export type TextToSpeechOutput = z.infer<typeof TextToSpeechOutputSchema>;
 
+export const SpeechToTextInputSchema = z.object({
+  audio: z
+    .string()
+    .describe(
+      "The audio to transcribe as a data URI. Expected format: 'data:audio/wav;base64,<encoded_data>'"
+    ),
+  model: z.string().optional().describe('The STT model to use.'),
+});
+export type SpeechToTextInput = z.infer<typeof SpeechToTextInputSchema>;
+
+export const SpeechToTextOutputSchema = z.object({
+  text: z.string().describe('The transcribed text.'),
+});
+export type SpeechToTextOutput = z.infer<typeof SpeechToTextOutputSchema>;
+
+
 export type ConversationStep = z.infer<typeof ConversationStepSchema>;
 
 export type Agent = {
@@ -76,5 +92,3 @@ export type ChatMessage = {
   role: 'user' | 'assistant';
   content: string;
 };
-
-    

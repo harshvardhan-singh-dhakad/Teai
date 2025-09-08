@@ -4,7 +4,8 @@ import { enhanceUserPrompt, EnhanceUserPromptInput, EnhanceUserPromptOutput } fr
 import { createAgentFromPrompt, CreateAgentInput, CreateAgentOutput } from '@/ai/flows/create-agent-from-prompt';
 import { assistantHelper, AssistantHelperInput, AssistantHelperOutput } from '@/ai/flows/assistant-helper';
 import { textToSpeech } from '@/ai/flows/tts-flow';
-import type { TextToSpeechInput, TextToSpeechOutput } from '@/types';
+import { speechToText } from '@/ai/flows/stt-flow';
+import type { TextToSpeechInput, TextToSpeechOutput, SpeechToTextInput, SpeechToTextOutput } from '@/types';
 
 export async function enhancePromptAction(input: EnhanceUserPromptInput): Promise<EnhanceUserPromptOutput> {
   try {
@@ -39,5 +40,14 @@ export async function textToSpeechAction(input: TextToSpeechInput): Promise<Text
     } catch (error) {
         console.error('Error converting text to speech:', error);
         throw new Error('Failed to convert text to speech.');
+    }
+}
+
+export async function speechToTextAction(input: SpeechToTextInput): Promise<SpeechToTextOutput> {
+    try {
+        return await speechToText(input);
+    } catch (error) {
+        console.error('Error converting speech to text:', error);
+        throw new Error('Failed to convert speech to text.');
     }
 }
