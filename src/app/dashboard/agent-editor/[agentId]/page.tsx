@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import { useEffect, useState } from "react"
@@ -47,11 +48,14 @@ const sttModels = [
 ]
 
 const ttsModels = {
-    "google": [
-        { value: "google-hi-1", label: "Hindi Female 1" },
-        { value: "google-en-1", label: "English Male 1" },
+    "Google": [
+        { value: "Chorale", label: "English Male 1" },
+        { value: "Algenib", label: "English Male 2" },
+        { value: "hin-IN-Standard-A", label: "Hindi Female 1" },
+        { value: "hin-IN-Standard-B", label: "Hindi Male 1" },
+
     ],
-    "eleven-labs": [
+    "ElevenLabs": [
         { value: "eleven-adam", label: "Adam (English)" },
         { value: "eleven-rachel", label: "Rachel (English)" },
     ]
@@ -340,14 +344,14 @@ export default function AgentEditorPage() {
                           <SelectContent>
                             <SelectGroup>
                               <SelectLabel>Google</SelectLabel>
-                              {ttsModels.google.map(model => (
+                              {ttsModels.Google.map(model => (
                                 <SelectItem key={model.value} value={model.value}>{model.label}</SelectItem>
                               ))}
                             </SelectGroup>
                             <SelectGroup>
-                              <SelectLabel>Eleven Labs</SelectLabel>
-                              {ttsModels['eleven-labs'].map(model => (
-                                <SelectItem key={model.value} value={model.value}>{model.label}</SelectItem>
+                              <SelectLabel>ElevenLabs</SelectLabel>
+                              {ttsModels.ElevenLabs.map(model => (
+                                <SelectItem key={model.value} value={model.value} disabled>{model.label}</SelectItem>
                               ))}
                             </SelectGroup>
                           </SelectContent>
@@ -425,3 +429,5 @@ export default function AgentEditorPage() {
     </div>
   )
 }
+
+    

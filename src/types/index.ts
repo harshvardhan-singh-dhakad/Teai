@@ -27,6 +27,7 @@ export const ConversationStepSchema = z.object({
 
 export const TextToSpeechInputSchema = z.object({
   text: z.string().describe('The text to convert to speech.'),
+  voice: z.string().optional().describe('The voice to use for the speech.'),
 });
 export type TextToSpeechInput = z.infer<typeof TextToSpeechInputSchema>;
 
@@ -75,3 +76,5 @@ export type ChatMessage = {
   role: 'user' | 'assistant';
   content: string;
 };
+
+    

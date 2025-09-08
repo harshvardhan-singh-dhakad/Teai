@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import { useState, useEffect, useTransition, useRef } from "react"
@@ -72,7 +73,7 @@ export default function TestingPage() {
         setMessages(prev => [...prev, { role: 'assistant', content: answer }]);
 
         // 2. Convert the response to speech
-        const { audio } = await textToSpeechAction({ text: answer });
+        const { audio } = await textToSpeechAction({ text: answer, voice: selectedAgent.configurations?.ttsModel });
         
         // 3. Play the audio
         if (audioRef.current) {
@@ -93,9 +94,9 @@ export default function TestingPage() {
   
   const playLastAgentMessage = async () => {
     const lastAgentMessage = messages.filter(m => m.role === 'assistant').pop();
-    if (lastAgentMessage) {
+    if (lastAgentMessage && selectedAgent) {
         try {
-            const { audio } = await textToSpeechAction({ text: lastAgentMessage.content });
+            const { audio } = await textToSpeechAction({ text: lastAgentMessage.content, voice: selectedAgent.configurations?.ttsModel });
             if (audioRef.current) {
               audioRef.current.src = audio;
               audioRef.current.play().catch(e => console.error("Audio playback failed:", e));
@@ -210,3 +211,5 @@ export default function TestingPage() {
     </div>
   )
 }
+
+    
