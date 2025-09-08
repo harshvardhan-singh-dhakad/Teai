@@ -12,7 +12,7 @@ import { Avatar, AvatarFallback } from "./ui/avatar"
 
 export function AssistantChatbot() {
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: 'assistant', content: "Hello! I'm your AI assistant. How can I help you with creating your agent today?" }
+    { role: 'assistant', content: "I am your AI coding partner. How can I help you build your agent today? Feel free to ask for code, or guidance on best practices." }
   ])
   const [input, setInput] = useState("")
   const [isThinking, startTransition] = useTransition()
@@ -48,10 +48,10 @@ export function AssistantChatbot() {
         <SheetHeader>
           <SheetTitle className="font-headline flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" />
-            AI Assistant
+            AI App Prototyper
           </SheetTitle>
           <SheetDescription>
-            Ask me anything about creating your agent.
+            Your AI coding partner for building agents.
           </SheetDescription>
         </SheetHeader>
         <ScrollArea className="flex-1 my-4 pr-4" ref={scrollAreaRef}>

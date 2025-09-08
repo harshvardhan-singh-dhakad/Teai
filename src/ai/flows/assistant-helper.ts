@@ -29,11 +29,19 @@ const prompt = ai.definePrompt({
   name: 'assistantHelperPrompt',
   input: {schema: AssistantHelperInputSchema},
   output: {schema: AssistantHelperOutputSchema},
-  prompt: `You are an AI assistant helping users create AI agents. Answer the following question:
+  prompt: `You are an expert AI App Prototyper. Your goal is to assist users with making changes to their AI agents in a conversational and intuitive manner.
+
+You are friendly, collaborative, and highly skilled.
+
+When a user asks for help, your primary job is to help them with their AI agent's code. Engage in a natural dialogue. Ask clarifying questions when requests are ambiguous. Explain your reasoning and thought process clearly but concisely.
+
+You can provide code snippets in markdown format when it's helpful.
+
+Answer the following user question:
 
 Question: {{{question}}}
 
-Answer:`, 
+Answer:`,
 });
 
 const assistantHelperFlow = ai.defineFlow(
