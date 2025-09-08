@@ -66,7 +66,7 @@ export default function AgentEditorPage() {
   const [agent, setAgent] = useState<Agent | undefined>(undefined)
 
   useEffect(() => {
-    const { agentId } = params;
+    const agentId = params.agentId as string;
     if (agentId && agents.length > 0) {
       const currentAgent = agents.find(a => a.id === agentId)
       if (currentAgent) {
@@ -219,95 +219,124 @@ export default function AgentEditorPage() {
                 </Card>
             </TabsContent>
             <TabsContent value="configurations">
-                <Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Configurations</CardTitle>
+                  <CardDescription>
+                    Customize the AI models, voice, and language for your agent.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-6">
+                  <Card>
                     <CardHeader>
-                        <CardTitle>Voice &amp; Language</CardTitle>
-                        <CardDescription>
-                        Configure the voice, language, and AI models for your agent.
-                        </CardDescription>
+                      <CardTitle className="text-lg font-semibold">Voice &amp; Language</CardTitle>
+                      <CardDescription>Select the language and voice for your agent.</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="grid md:grid-cols-2 gap-4">
-                            <div className="grid gap-2">
-                                <Label htmlFor="language">Language</Label>
-                                <Select value={agent.configurations?.language} onValueChange={(value) => updateAgentConfiguration('language', value)}>
-                                    <SelectTrigger id="language">
-                                        <SelectValue placeholder="Select language" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {languages.map(lang => (
-                                            <SelectItem key={lang.value} value={lang.value}>{lang.label}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="llm-model">Language Model (LLM)</Label>
-                                 <Select value={agent.configurations?.llmModel} onValueChange={(value) => updateAgentConfiguration('llmModel', value)}>
-                                    <SelectTrigger id="llm-model">
-                                        <SelectValue placeholder="Select a model" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {llmModels.map(model => (
-                                            <SelectItem key={model.value} value={model.value}>{model.label}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="stt-model">Speech-to-Text (STT)</Label>
-                                <Select value={agent.configurations?.sttModel} onValueChange={(value) => updateAgentConfiguration('sttModel', value)}>
-                                    <SelectTrigger id="stt-model">
-                                        <SelectValue placeholder="Select a model" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {sttModels.map(model => (
-                                            <SelectItem key={model.value} value={model.value}>{model.label}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="tts-model">Text-to-Speech (TTS)</Label>
-                                 <Select value={agent.configurations?.ttsModel} onValueChange={(value) => updateAgentConfiguration('ttsModel', value)}>
-                                    <SelectTrigger id="tts-model">
-                                        <SelectValue placeholder="Select a model" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectGroup>
-                                            <SelectLabel>Google</SelectLabel>
-                                            {ttsModels.google.map(model => (
-                                                <SelectItem key={model.value} value={model.value}>{model.label}</SelectItem>
-                                            ))}
-                                        </SelectGroup>
-                                        <SelectGroup>
-                                            <SelectLabel>Eleven Labs</SelectLabel>
-                                            {ttsModels['eleven-labs'].map(model => (
-                                                <SelectItem key={model.value} value={model.value}>{model.label}</SelectItem>
-                                            ))}
-                                        </SelectGroup>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
+                    <CardContent className="grid md:grid-cols-2 gap-4">
+                      <div className="grid gap-2">
+                        <Label htmlFor="language">Language</Label>
+                        <Select value={agent.configurations?.language} onValueChange={(value) => updateAgentConfiguration('language', value)}>
+                          <SelectTrigger id="language">
+                            <SelectValue placeholder="Select language" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {languages.map(lang => (
+                              <SelectItem key={lang.value} value={lang.value}>{lang.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                       <div className="grid gap-2">
+                        <Label htmlFor="tts-model">Text-to-Speech (TTS) Voice</Label>
+                        <Select value={agent.configurations?.ttsModel} onValueChange={(value) => updateAgentConfiguration('ttsModel', value)}>
+                          <SelectTrigger id="tts-model">
+                            <SelectValue placeholder="Select a voice" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectGroup>
+                              <SelectLabel>Google</SelectLabel>
+                              {ttsModels.google.map(model => (
+                                <SelectItem key={model.value} value={model.value}>{model.label}</SelectItem>
+                              ))}
+                            </SelectGroup>
+                            <SelectGroup>
+                              <SelectLabel>Eleven Labs</SelectLabel>
+                              {ttsModels['eleven-labs'].map(model => (
+                                <SelectItem key={model.value} value={model.value}>{model.label}</SelectItem>
+                              ))}
+                            </SelectGroup>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </CardContent>
-                </Card>
+                  </Card>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg font-semibold">AI Models</CardTitle>
+                      <CardDescription>Choose the models for language understanding and transcription.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="grid md:grid-cols-2 gap-4">
+                      <div className="grid gap-2">
+                        <Label htmlFor="llm-model">Language Model (LLM)</Label>
+                        <Select value={agent.configurations?.llmModel} onValueChange={(value) => updateAgentConfiguration('llmModel', value)}>
+                          <SelectTrigger id="llm-model">
+                            <SelectValue placeholder="Select an LLM" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {llmModels.map(model => (
+                              <SelectItem key={model.value} value={model.value}>{model.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="stt-model">Speech-to-Text (STT)</Label>
+                        <Select value={agent.configurations?.sttModel} onValueChange={(value) => updateAgentConfiguration('sttModel', value)}>
+                          <SelectTrigger id="stt-model">
+                            <SelectValue placeholder="Select an STT model" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {sttModels.map(model => (
+                              <SelectItem key={model.value} value={model.value}>{model.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </CardContent>
+              </Card>
             </TabsContent>
             <TabsContent value="post-call">
               <Card>
-                <CardHeader><CardTitle>Post-Call Actions</CardTitle></CardHeader>
-                <CardContent className="text-center text-muted-foreground p-12">
-                  <Webhook className="mx-auto h-12 w-12" />
-                  <p className="mt-4">Webhook configurations coming soon.</p>
+                <CardHeader>
+                  <CardTitle>Post-Call Actions</CardTitle>
+                  <CardDescription>
+                    Configure what happens after a call ends.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="webhook-url" className="flex items-center gap-2">
+                      <Webhook className="h-4 w-4" />
+                      Webhook URL
+                    </Label>
+                    <Input
+                      id="webhook-url"
+                      placeholder="https://your-service.com/webhook"
+                      value={agent.postCall?.webhookUrl}
+                      onChange={e => updateAgent({ postCall: { webhookUrl: e.target.value } })}
+                    />
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
           </div>
         </Tabs>
       </div>
-       <AssistantChatbot />
+       <div className="hidden lg:block">
+        <AssistantChatbot />
+      </div>
     </div>
   )
 }
-
-    
