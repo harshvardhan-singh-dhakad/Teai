@@ -1,8 +1,9 @@
+
 "use client"
 
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
-import { PlusCircle, Sparkles, FileText, ShoppingCart, Headset } from "lucide-react"
+import { PlusCircle, Sparkles, FileText, ShoppingCart, Headset, CornerDownLeft } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -13,21 +14,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
@@ -49,7 +35,6 @@ export default function AgentBuilderPage() {
   const [isCreating, startCreateTransition] = useTransition()
   
   const [prompt, setPrompt] = useState("")
-  const [isDialogOpen, setDialogOpen] = useState(false)
 
   const handleEnhancePrompt = () => {
     startEnhanceTransition(async () => {
@@ -84,7 +69,6 @@ export default function AgentBuilderPage() {
         }
         setAgents(prev => [...prev, newAgent])
         toast({ title: "Agent Created", description: `Draft for "${newAgent.name}" has been saved.` })
-        setDialogOpen(false)
         setPrompt("")
         router.push(`/dashboard/agent-editor/${newAgent.id}`)
       } catch (error) {
@@ -93,73 +77,64 @@ export default function AgentBuilderPage() {
     })
   }
 
-  const createFromTemplate = (templatePrompt: string) => {
-    setPrompt(templatePrompt);
-    setDialogOpen(true);
-  }
-
   const drafts = agents.filter(a => a.status === 'draft');
   const published = agents.filter(a => a.status === 'published');
 
 
   return (
     <div className="grid auto-rows-max items-start gap-4 md:gap-8">
-      <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4">
-        <Card className="sm:col-span-2">
-          <CardHeader className="pb-3">
-            <CardTitle className="font-headline">Your Agents</CardTitle>
-            <CardDescription className="max-w-lg text-balance leading-relaxed">
-              Manage, edit, and test your draft and published AI voice agents.
-            </CardDescription>
-          </CardHeader>
-          <CardFooter>
-             <Dialog open={isDialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger asChild>
-                <Button><PlusCircle className="mr-2 h-4 w-4" />Create Agent</Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                  <DialogTitle className="font-headline">Create New Agent</DialogTitle>
-                  <DialogDescription>
-                    Describe the agent you want to create. You can start simple.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <Label htmlFor="prompt">Agent Prompt</Label>
-                  <Textarea id="prompt" value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="e.g., A friendly sales agent for a real estate company." className="min-h-[120px]" />
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={handleEnhancePrompt} disabled={isEnhancing}>
-                    <Sparkles className="mr-2 h-4 w-4" /> {isEnhancing ? 'Enhancing...' : 'Enhance Prompt'}
-                  </Button>
-                  <Button onClick={handleCreateAgent} disabled={isCreating}>
-                    {isCreating ? 'Creating...' : 'Create Agent'}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </CardFooter>
-        </Card>
-        {templates.slice(0, 2).map((template) => (
-          <Card key={template.name}>
-            <CardHeader>
-              <template.icon className="h-8 w-8 text-primary mb-2" />
-              <CardTitle className="text-lg font-headline">{template.name}</CardTitle>
-              <CardDescription>{template.description}</CardDescription>
-            </CardHeader>
-            <CardFooter>
-              <Button variant="outline" size="sm" onClick={() => createFromTemplate(template.prompt)}>Use Template</Button>
-            </CardFooter>
-          </Card>
-        ))}
+      <div className="grid gap-4 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+            <Card className="flex flex-col h-full">
+                 <CardHeader>
+                    <CardTitle className="font-headline">Create a new agent</CardTitle>
+                    <CardDescription>Describe the agent you want to create in the box below.</CardDescription>
+                </CardHeader>
+                <CardContent className="flex-1 flex flex-col gap-4">
+                    <div className="relative flex-1">
+                        <Textarea 
+                            id="prompt" 
+                            value={prompt} 
+                            onChange={(e) => setPrompt(e.target.value)} 
+                            placeholder="e.g., Create an AI agent in one click for a real estate company." 
+                            className="h-full resize-none"
+                        />
+                        <div className="absolute bottom-3 right-3 flex items-center gap-2">
+                           <Button variant="ghost" size="sm" onClick={handleEnhancePrompt} disabled={isEnhancing}>
+                                <Sparkles className="mr-2 h-4 w-4" /> {isEnhancing ? 'Enhancing...' : 'Enhance'}
+                            </Button>
+                            <Button onClick={handleCreateAgent} disabled={isCreating}>
+                                {isCreating ? 'Creating...' : 'Create Agent'} <CornerDownLeft className="ml-2 h-4 w-4" />
+                            </Button>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
+        <div className="grid gap-4">
+          {templates.slice(0, 2).map((template) => (
+            <Card key={template.name}>
+              <CardHeader>
+                <template.icon className="h-8 w-8 text-primary mb-2" />
+                <CardTitle className="text-lg font-headline">{template.name}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription>{template.description}</CardDescription>
+              </CardContent>
+              <CardFooter>
+                <Button variant="outline" size="sm" onClick={() => setPrompt(template.prompt)}>Use Template</Button>
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
       </div>
       
       <Tabs defaultValue="all">
         <div className="flex items-center">
           <TabsList>
-            <TabsTrigger value="all">All</TabsTrigger>
-            <TabsTrigger value="drafts">Drafts</TabsTrigger>
-            <TabsTrigger value="published">Published</TabsTrigger>
+            <TabsTrigger value="all">All ({agents.length})</TabsTrigger>
+            <TabsTrigger value="drafts">Drafts ({drafts.length})</TabsTrigger>
+            <TabsTrigger value="published">Published ({published.length})</TabsTrigger>
           </TabsList>
         </div>
         <TabsContent value="all">
@@ -184,8 +159,9 @@ function AgentList({ agents }: { agents: Agent[] }) {
     return (
       <Card>
         <CardContent className="pt-6">
-          <div className="text-center text-muted-foreground">
-            No agents found.
+          <div className="text-center text-muted-foreground py-12">
+            <h3 className="text-lg font-semibold">No Agents Yet</h3>
+            <p className="mt-2">Create your first agent to see it listed here.</p>
           </div>
         </CardContent>
       </Card>
