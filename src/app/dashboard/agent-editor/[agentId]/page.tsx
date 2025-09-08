@@ -33,9 +33,9 @@ export default function AgentEditorPage({ params }: { params: { agentId: string 
   const { toast } = useToast()
   const [agents, setAgents] = useLocalStorage<Agent[]>("agents", [])
   const [agent, setAgent] = useState<Agent | undefined>(undefined)
-  const { agentId } = params;
 
   useEffect(() => {
+    const { agentId } = params;
     if (agentId && agents.length > 0) {
       const currentAgent = agents.find(a => a.id === agentId)
       if (currentAgent) {
@@ -44,7 +44,7 @@ export default function AgentEditorPage({ params }: { params: { agentId: string 
         notFound()
       }
     }
-  }, [agentId, agents])
+  }, [params, agents])
 
   const updateAgent = (updatedFields: Partial<Agent>) => {
     if (!agent) return;
