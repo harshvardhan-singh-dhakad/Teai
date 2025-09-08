@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useEffect, useState } from "react"
@@ -27,6 +28,35 @@ import { useLocalStorage } from "@/hooks/use-local-storage"
 import { AssistantChatbot } from "@/components/assistant-chatbot"
 import { useToast } from "@/hooks/use-toast"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select"
+
+const languages = [
+    { value: "en-US", label: "English (US)" },
+    { value: "hi-IN", label: "Hindi" },
+    { value: "es-ES", label: "Spanish" },
+]
+
+const llmModels = [
+    { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash" },
+    { value: "gpt-4", label: "GPT-4" },
+]
+
+const sttModels = [
+    { value: "google-standard", label: "Google Standard" },
+    { value: "whisper-1", label: "Whisper" },
+]
+
+const ttsModels = {
+    "google": [
+        { value: "google-hi-1", label: "Hindi Female 1" },
+        { value: "google-en-1", label: "English Male 1" },
+    ],
+    "eleven-labs": [
+        { value: "eleven-adam", label: "Adam (English)" },
+        { value: "eleven-rachel", label: "Rachel (English)" },
+    ]
+}
+
 
 export default function AgentEditorPage() {
   const router = useRouter()
@@ -55,6 +85,16 @@ export default function AgentEditorPage() {
       prevAgents.map(a => a.id === agent.id ? updatedAgent : a)
     );
   }
+  
+  const updateAgentConfiguration = (key: keyof Agent['configurations'], value: string) => {
+    if (!agent) return;
+    updateAgent({
+      configurations: {
+        ...agent.configurations,
+        [key]: value,
+      },
+    });
+  };
 
   const handlePublish = () => {
     if (!agent) return
@@ -179,13 +219,79 @@ export default function AgentEditorPage() {
                 </Card>
             </TabsContent>
             <TabsContent value="configurations">
-              <Card>
-                <CardHeader><CardTitle>Configurations</CardTitle></CardHeader>
-                <CardContent className="text-center text-muted-foreground p-12">
-                  <Settings className="mx-auto h-12 w-12" />
-                  <p className="mt-4">Model and voice configurations coming soon.</p>
-                </CardContent>
-              </Card>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Voice &amp; Language</CardTitle>
+                        <CardDescription>
+                        Configure the voice, language, and AI models for your agent.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="grid md:grid-cols-2 gap-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="language">Language</Label>
+                                <Select value={agent.configurations?.language} onValueChange={(value) => updateAgentConfiguration('language', value)}>
+                                    <SelectTrigger id="language">
+                                        <SelectValue placeholder="Select language" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {languages.map(lang => (
+                                            <SelectItem key={lang.value} value={lang.value}>{lang.label}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="llm-model">Language Model (LLM)</Label>
+                                 <Select value={agent.configurations?.llmModel} onValueChange={(value) => updateAgentConfiguration('llmModel', value)}>
+                                    <SelectTrigger id="llm-model">
+                                        <SelectValue placeholder="Select a model" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {llmModels.map(model => (
+                                            <SelectItem key={model.value} value={model.value}>{model.label}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="stt-model">Speech-to-Text (STT)</Label>
+                                <Select value={agent.configurations?.sttModel} onValueChange={(value) => updateAgentConfiguration('sttModel', value)}>
+                                    <SelectTrigger id="stt-model">
+                                        <SelectValue placeholder="Select a model" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {sttModels.map(model => (
+                                            <SelectItem key={model.value} value={model.value}>{model.label}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="tts-model">Text-to-Speech (TTS)</Label>
+                                 <Select value={agent.configurations?.ttsModel} onValueChange={(value) => updateAgentConfiguration('ttsModel', value)}>
+                                    <SelectTrigger id="tts-model">
+                                        <SelectValue placeholder="Select a model" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectGroup>
+                                            <SelectLabel>Google</SelectLabel>
+                                            {ttsModels.google.map(model => (
+                                                <SelectItem key={model.value} value={model.value}>{model.label}</SelectItem>
+                                            ))}
+                                        </SelectGroup>
+                                        <SelectGroup>
+                                            <SelectLabel>Eleven Labs</SelectLabel>
+                                            {ttsModels['eleven-labs'].map(model => (
+                                                <SelectItem key={model.value} value={model.value}>{model.label}</SelectItem>
+                                            ))}
+                                        </SelectGroup>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
             </TabsContent>
             <TabsContent value="post-call">
               <Card>
@@ -203,3 +309,5 @@ export default function AgentEditorPage() {
     </div>
   )
 }
+
+    

@@ -1,3 +1,4 @@
+
 export type Agent = {
   id: string;
   name: string;
@@ -10,8 +11,10 @@ export type Agent = {
     googleCalendar?: { apiKey: string };
   };
   configurations?: {
-    model: string;
-    voice: string;
+    language?: string;
+    llmModel?: string;
+    sttModel?: string;
+    ttsModel?: string;
   };
   postCall?: {
     webhookUrl: string;
@@ -30,3 +33,5 @@ export type ChatMessage = {
   role: 'user' | 'assistant';
   content: string;
 };
+
+    
