@@ -3,7 +3,8 @@
 import { enhanceUserPrompt, EnhanceUserPromptInput, EnhanceUserPromptOutput } from '@/ai/flows/enhance-user-prompt';
 import { createAgentFromPrompt, CreateAgentInput, CreateAgentOutput } from '@/ai/flows/create-agent-from-prompt';
 import { assistantHelper, AssistantHelperInput, AssistantHelperOutput } from '@/ai/flows/assistant-helper';
-import { textToSpeech, TextToSpeechInput, TextToSpeechOutput } from '@/ai/flows/tts-flow';
+import { textToSpeech } from '@/ai/flows/tts-flow';
+import type { TextToSpeechInput, TextToSpeechOutput } from '@/types';
 
 export async function enhancePromptAction(input: EnhanceUserPromptInput): Promise<EnhanceUserPromptOutput> {
   try {

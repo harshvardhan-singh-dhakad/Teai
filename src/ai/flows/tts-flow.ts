@@ -9,24 +9,17 @@
 
 import {ai} from '@/ai/genkit';
 import {googleAI} from '@genkit-ai/googleai';
-import {z} from 'genkit';
+import {
+  TextToSpeechInputSchema,
+  TextToSpeechOutputSchema,
+  type TextToSpeechInput,
+  type TextToSpeechOutput,
+} from '@/types';
 import wav from 'wav';
 
-export const TextToSpeechInputSchema = z.object({
-  text: z.string().describe('The text to convert to speech.'),
-});
-export type TextToSpeechInput = z.infer<typeof TextToSpeechInputSchema>;
-
-export const TextToSpeechOutputSchema = z.object({
-  audio: z
-    .string()
-    .describe(
-      "The generated audio as a data URI. Expected format: 'data:audio/wav;base64,<encoded_data>'."
-    ),
-});
-export type TextToSpeechOutput = z.infer<typeof TextToSpeechOutputSchema>;
-
-export async function textToSpeech(input: TextToSpeechInput): Promise<TextToSpeechOutput> {
+export async function textToSpeech(
+  input: TextToSpeechInput
+): Promise<TextToSpeechOutput> {
   return textToSpeechFlow(input);
 }
 
