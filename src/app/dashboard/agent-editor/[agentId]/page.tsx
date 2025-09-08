@@ -75,7 +75,7 @@ export default function AgentEditorPage() {
         notFound()
       }
     }
-  }, [params, agents])
+  }, [params.agentId, agents])
 
   const updateAgent = (updatedFields: Partial<Agent>) => {
     if (!agent) return;
@@ -211,7 +211,7 @@ export default function AgentEditorPage() {
                 {agent.name}
             </h1>
           </div>
-          <div className="hidden items-center gap-2 md:ml-auto md:flex">
+          <div className="flex items-center gap-2 ml-auto">
             <Button variant="outline" size="sm" onClick={handleTest}>
               <FlaskConical className="h-4 w-4 mr-2" />
               Test Agent
@@ -425,5 +425,3 @@ export default function AgentEditorPage() {
     </div>
   )
 }
-
-    
