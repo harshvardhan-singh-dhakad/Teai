@@ -3,6 +3,7 @@
 import { enhanceUserPrompt, EnhanceUserPromptInput, EnhanceUserPromptOutput } from '@/ai/flows/enhance-user-prompt';
 import { createAgentFromPrompt, CreateAgentInput, CreateAgentOutput } from '@/ai/flows/create-agent-from-prompt';
 import { assistantHelper, AssistantHelperInput, AssistantHelperOutput } from '@/ai/flows/assistant-helper';
+import { textToSpeech, TextToSpeechInput, TextToSpeechOutput } from '@/ai/flows/tts-flow';
 
 export async function enhancePromptAction(input: EnhanceUserPromptInput): Promise<EnhanceUserPromptOutput> {
   try {
@@ -28,5 +29,14 @@ export async function getAssistantResponse(input: AssistantHelperInput): Promise
     } catch (error) {
         console.error('Error getting assistant response:', error);
         throw new Error('Failed to get response from assistant.');
+    }
+}
+
+export async function textToSpeechAction(input: TextToSpeechInput): Promise<TextToSpeechOutput> {
+    try {
+        return await textToSpeech(input);
+    } catch (error) {
+        console.error('Error converting text to speech:', error);
+        throw new Error('Failed to convert text to speech.');
     }
 }
