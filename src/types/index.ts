@@ -1,9 +1,27 @@
 
+import { z } from 'zod';
+
+export const ConversationStepBranchSchema = z.object({
+  condition: z.string().describe("The condition for this branch, e.g., 'If True' or 'If False'"),
+  action: z.string().describe("The title of the next action or step."),
+  content: z.string().describe("The AI's response or action content for this branch.")
+});
+
+export const ConversationStepSchema = z.object({
+  type: z.enum(['aiMessage', 'userListen', 'condition']).describe("The type of conversation step."),
+  title: z.string().describe("The title or name of the step."),
+  content: z.string().optional().describe("The content of the step, like a message or description."),
+  branches: z.array(ConversationStepBranchSchema).optional().describe("Branches for a condition step.")
+});
+
+
+export type ConversationStep = z.infer<typeof ConversationStepSchema>;
+
 export type Agent = {
   id: string;
   name: string;
   description: string;
-  conversationFlow: string;
+  conversationFlow: ConversationStep[] | string; // Can be a structured flow or a simple string for backward compatibility
   status: 'draft' | 'published';
   avatar?: string;
   integrations?: {
@@ -33,5 +51,3 @@ export type ChatMessage = {
   role: 'user' | 'assistant';
   content: string;
 };
-
-    

@@ -23,7 +23,7 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
-import type { Agent } from "@/types"
+import type { Agent, ConversationStep } from "@/types"
 import { useLocalStorage } from "@/hooks/use-local-storage"
 import { AssistantChatbot } from "@/components/assistant-chatbot"
 import { useToast } from "@/hooks/use-toast"
@@ -127,6 +127,68 @@ export default function AgentEditorPage() {
   const isPublished = agent.status === 'published';
   const isIntegrated = agent.integrations?.twilio?.accountSid;
 
+  const renderNode = (step: ConversationStep, index: number) => {
+    switch (step.type) {
+        case 'aiMessage':
+            return (
+                <Card key={index} className="w-80 mx-auto shadow-lg">
+                    <CardContent className="p-4">
+                        <div className="flex items-center gap-3">
+                            <MessageSquare className="h-5 w-5 text-primary" />
+                            <div className="text-left">
+                                <p className="font-medium">{step.title}</p>
+                                <p className="text-sm text-muted-foreground">"{step.content}"</p>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            );
+        case 'userListen':
+            return (
+                <Card key={index} className="w-80 mx-auto shadow-lg">
+                    <CardContent className="p-4">
+                        <div className="flex items-center gap-3">
+                            <Mic className="h-5 w-5 text-primary" />
+                            <div className="text-left">
+                                <p className="font-medium">{step.title}</p>
+                                <p className="text-sm text-muted-foreground">{step.content}</p>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            );
+        case 'condition':
+            return (
+                <Card key={index} className="w-96 mx-auto shadow-lg bg-card">
+                    <CardHeader className="p-4 border-b">
+                        <div className="flex items-center gap-3">
+                            <GitBranch className="h-5 w-5 text-primary" />
+                            <p className="font-medium">{step.title}</p>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                        <div className="flex">
+                            {step.branches?.map((branch, i) => (
+                                <div key={i} className={`flex-1 p-4 ${i === 0 ? 'border-r' : ''}`}>
+                                    <p className={`text-xs font-semibold mb-2 ${branch.condition === 'If True' ? 'text-green-400' : 'text-red-400'}`}>{branch.condition.toUpperCase()}</p>
+                                    <Card className="w-full">
+                                        <CardContent className="p-3 text-left">
+                                            <p className="font-medium text-sm">{branch.action}</p>
+                                            <p className="text-xs text-muted-foreground">"{branch.content}"</p>
+                                        </CardContent>
+                                    </Card>
+                                </div>
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
+            );
+        default:
+            return null;
+    }
+  };
+
+
   return (
     <div className="grid auto-rows-max items-start gap-4 lg:gap-8">
       <div className="grid gap-4">
@@ -182,80 +244,18 @@ export default function AgentEditorPage() {
                   <div className="grid gap-2">
                     <Label>Conversation Flow</Label>
                      <div className="p-4 border-2 border-dashed rounded-lg min-h-[500px] flex flex-col items-center justify-start text-center bg-secondary/30 relative overflow-auto">
-                        {/* Node-based editor UI */}
                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center flex-col space-y-4 w-[90%]">
                             
-                            {/* Start Node */}
-                            <Card className="w-80 mx-auto shadow-lg">
-                                <CardContent className="p-4">
-                                    <div className="flex items-center gap-3">
-                                    <MessageSquare className="h-5 w-5 text-primary"/>
-                                    <div className="text-left">
-                                        <p className="font-medium">Welcome Message</p>
-                                        <p className="text-sm text-muted-foreground">"Hello, how can I help?"</p>
-                                    </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-
-                            {/* Connector */}
-                            <div className="h-10 w-px bg-border"/>
-
-                            {/* Listener Node */}
-                            <Card className="w-80 mx-auto shadow-lg">
-                                <CardContent className="p-4">
-                                    <div className="flex items-center gap-3">
-                                        <Mic className="h-5 w-5 text-primary"/>
-                                        <div className="text-left">
-                                            <p className="font-medium">Listen for Response</p>
-                                            <p className="text-sm text-muted-foreground">Capture user's reply</p>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                            
-                            {/* Connector */}
-                            <div className="h-10 w-px bg-border"/>
-
-                            {/* Condition Node */}
-                             <Card className="w-96 mx-auto shadow-lg bg-card">
-                                 <CardHeader className="p-4 border-b">
-                                     <div className="flex items-center gap-3">
-                                        <GitBranch className="h-5 w-5 text-primary"/>
-                                        <p className="font-medium">Condition: User interested in pricing</p>
-                                    </div>
-                                 </CardHeader>
-                                <CardContent className="p-0">
-                                   <div className="flex">
-                                        {/* Branch 1 */}
-                                        <div className="flex-1 p-4 border-r">
-                                            <p className="text-xs font-semibold mb-2 text-green-400">IF TRUE</p>
-                                            <Card className="w-full">
-                                                <CardContent className="p-3 text-left">
-                                                    <p className="font-medium text-sm">Explain Pricing</p>
-                                                    <p className="text-xs text-muted-foreground">"Our plans start at $19..."</p>
-                                                </CardContent>
-                                            </Card>
-                                        </div>
-                                        {/* Branch 2 */}
-                                        <div className="flex-1 p-4">
-                                             <p className="text-xs font-semibold mb-2 text-red-400">IF FALSE</p>
-                                             <Card className="w-full">
-                                                <CardContent className="p-3 text-left">
-                                                    <p className="font-medium text-sm">Ask for Clarification</p>
-                                                    <p className="text-xs text-muted-foreground">"How else can I help?"</p>
-                                                </CardContent>
-                                            </Card>
-                                        </div>
-                                   </div>
-                                </CardContent>
-                            </Card>
-
-                             {/* Connector */}
-                             <div className="h-10 w-px bg-border"/>
-
-                           {/* Add Step Button */}
-                           <Button variant="outline" size="sm" className="shadow-md">
+                            {Array.isArray(agent.conversationFlow) && agent.conversationFlow.map((step, index) => (
+                                <>
+                                    {renderNode(step, index)}
+                                    {index < agent.conversationFlow.length - 1 && (
+                                        <div className="h-10 w-px bg-border"/>
+                                    )}
+                                </>
+                            ))}
+                           
+                           <Button variant="outline" size="sm" className="shadow-md mt-4">
                             <PlusCircle className="mr-2 h-4 w-4" />
                             Add Step
                            </Button>
@@ -419,5 +419,3 @@ export default function AgentEditorPage() {
     </div>
   )
 }
-
-    
