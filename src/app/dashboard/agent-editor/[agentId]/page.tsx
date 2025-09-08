@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react"
 import { notFound, useRouter, useParams } from 'next/navigation'
-import { ArrowLeft, Check, Copy, ExternalLink, HardDriveUpload, Settings, Share, Webhook, PlusCircle, MessageSquare, Mic, GitBranch } from "lucide-react"
+import { ArrowLeft, Check, Copy, ExternalLink, HardDriveUpload, Settings, Share, Webhook, PlusCircle, MessageSquare, Mic, GitBranch, FlaskConical } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -86,7 +86,7 @@ export default function AgentEditorPage() {
     );
   }
   
-  const updateAgentConfiguration = (key: keyof Agent['configurations'], value: string) => {
+  const updateAgentConfiguration = (key: keyof NonNullable<Agent['configurations']>, value: string) => {
     if (!agent) return;
     updateAgent({
       configurations: {
@@ -114,6 +114,11 @@ export default function AgentEditorPage() {
       title: "Agent Published!",
       description: `"${agent.name}" is now live.`,
     })
+  }
+  
+  const handleTest = () => {
+    if (!agent) return;
+    router.push(`/dashboard/testing?agentId=${agent.id}`)
   }
 
   if (!agent) {
@@ -207,8 +212,9 @@ export default function AgentEditorPage() {
             </h1>
           </div>
           <div className="hidden items-center gap-2 md:ml-auto md:flex">
-            <Button variant="outline" size="sm" disabled={isPublished}>
-              Share
+            <Button variant="outline" size="sm" onClick={handleTest}>
+              <FlaskConical className="h-4 w-4 mr-2" />
+              Test Agent
             </Button>
             <Button size="sm" onClick={handlePublish} disabled={isPublished || !isIntegrated}>
               <HardDriveUpload className="h-4 w-4 mr-2" />
@@ -404,7 +410,7 @@ export default function AgentEditorPage() {
                       id="webhook-url"
                       placeholder="https://your-service.com/webhook"
                       value={agent.postCall?.webhookUrl}
-                      onChange={e => updateAgent({ postCall: { webhookUrl: e.target.value } })}
+                      onChange={e => updateAgent({ postCall: { ...agent.postCall, webhookUrl: e.target.value } })}
                     />
                   </div>
                 </CardContent>
@@ -419,3 +425,5 @@ export default function AgentEditorPage() {
     </div>
   )
 }
+
+    

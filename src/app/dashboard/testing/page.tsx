@@ -1,7 +1,8 @@
 
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useSearchParams } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -14,18 +15,45 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 
 export default function TestingPage() {
+  const searchParams = useSearchParams()
   const [agents] = useLocalStorage<Agent[]>("agents", [])
-  const [selectedAgentId, setSelectedAgentId] = useState<string | undefined>(agents[0]?.id)
-  const [messages, setMessages] = useState<ChatMessage[]>([
-     { role: 'assistant', content: "Hello! This is the sales department. How can I help you today?" }
-  ])
+  const [selectedAgentId, setSelectedAgentId] = useState<string | undefined>()
+  const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState("")
   const usage = 85 // Example usage percentage
-
+  
   const selectedAgent = agents.find(a => a.id === selectedAgentId)
 
+  useEffect(() => {
+    const agentIdFromUrl = searchParams.get('agentId')
+    if (agentIdFromUrl) {
+      setSelectedAgentId(agentIdFromUrl)
+    } else if (agents.length > 0) {
+      setSelectedAgentId(agents[0].id)
+    }
+  }, [searchParams, agents])
+  
+  useEffect(() => {
+    if (selectedAgent) {
+        // Find the first aiMessage in the conversation flow
+        if (Array.isArray(selectedAgent.conversationFlow)) {
+            const initialMessage = selectedAgent.conversationFlow.find(step => step.type === 'aiMessage');
+            if (initialMessage && initialMessage.content) {
+                setMessages([{ role: 'assistant', content: initialMessage.content }]);
+            } else {
+                 setMessages([{ role: 'assistant', content: "Hello! I am ready to start the conversation." }])
+            }
+        } else {
+            setMessages([{ role: 'assistant', content: "Hello! This is your selected agent. How can I help?" }])
+        }
+    } else {
+         setMessages([])
+    }
+  }, [selectedAgent])
+
+
   const handleSendMessage = () => {
-    if (!input.trim()) return
+    if (!input.trim() || !selectedAgent) return
 
     const newMessages: ChatMessage[] = [...messages, { role: 'user', content: input }]
     setMessages(newMessages)
@@ -34,7 +62,7 @@ export default function TestingPage() {
     // Simulate AI response after a short delay
     setTimeout(() => {
         // TODO: Replace this with a real call to the agent's logic
-        const aiResponse = "I am processing your request. This is a simulated response.";
+        const aiResponse = `This is a simulated response from ${selectedAgent.name}. The real conversation logic is not yet implemented.`;
         setMessages(prev => [...prev, { role: 'assistant', content: aiResponse }])
     }, 1000)
   }
@@ -66,8 +94,9 @@ export default function TestingPage() {
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                        disabled={!selectedAgent}
                     />
-                    <Button size="icon" aria-label="Send message" onClick={handleSendMessage}>
+                    <Button size="icon" aria-label="Send message" onClick={handleSendMessage} disabled={!selectedAgent}>
                         <Send className="h-4 w-4" />
                     </Button>
                 </div>
@@ -87,7 +116,7 @@ export default function TestingPage() {
                     <CardDescription>Choose an agent to test from your drafts or published agents.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                     <Select onValueChange={setSelectedAgentId} defaultValue={selectedAgentId}>
+                     <Select onValueChange={setSelectedAgentId} value={selectedAgentId}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select an agent" />
                       </SelectTrigger>
@@ -123,3 +152,5 @@ export default function TestingPage() {
     </div>
   )
 }
+
+    
