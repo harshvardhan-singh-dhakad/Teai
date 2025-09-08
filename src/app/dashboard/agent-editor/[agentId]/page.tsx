@@ -33,16 +33,18 @@ export default function AgentEditorPage({ params }: { params: { agentId: string 
   const { toast } = useToast()
   const [agents, setAgents] = useLocalStorage<Agent[]>("agents", [])
   const [agent, setAgent] = useState<Agent | undefined>(undefined)
+  const { agentId } = params;
 
   useEffect(() => {
-    const currentAgent = agents.find(a => a.id === params.agentId)
-    if (currentAgent) {
-      setAgent(currentAgent)
-    } else if (agents.length > 0) {
-      // If agent not found after agents have loaded, it's a 404
-      notFound()
+    if (agentId && agents.length > 0) {
+      const currentAgent = agents.find(a => a.id === agentId)
+      if (currentAgent) {
+        setAgent(currentAgent)
+      } else {
+        notFound()
+      }
     }
-  }, [params.agentId, agents])
+  }, [agentId, agents])
 
   const updateAgent = (updatedFields: Partial<Agent>) => {
     if (!agent) return;
