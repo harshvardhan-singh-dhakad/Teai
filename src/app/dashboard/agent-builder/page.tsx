@@ -76,7 +76,7 @@ export default function AgentBuilderPage() {
       try {
         const result = await createAgentAction({ prompt })
         const newAgent: Agent = {
-          id: crypto.randomUUID(),
+          id: `agent-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
           status: 'draft',
           createdAt: new Date().toISOString(),
           avatar: `https://picsum.photos/seed/${Math.random()}/100`,
