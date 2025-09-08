@@ -1,25 +1,31 @@
 
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useTransition, useRef } from "react"
 import { useSearchParams } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Phone, Send } from "lucide-react"
+import { Phone, Send, Volume2 } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
 import { Label } from "@/components/ui/label"
 import { useLocalStorage } from "@/hooks/use-local-storage"
 import type { Agent, ChatMessage } from "@/types"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { getAssistantResponse, textToSpeechAction } from "@/app/actions"
+import { useToast } from "@/hooks/use-toast"
 
 export default function TestingPage() {
   const searchParams = useSearchParams()
+  const { toast } = useToast()
   const [agents] = useLocalStorage<Agent[]>("agents", [])
   const [selectedAgentId, setSelectedAgentId] = useState<string | undefined>()
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState("")
+  const [isThinking, startTransition] = useTransition()
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  
   const usage = 85 // Example usage percentage
   
   const selectedAgent = agents.find(a => a.id === selectedAgentId)
@@ -35,7 +41,6 @@ export default function TestingPage() {
   
   useEffect(() => {
     if (selectedAgent) {
-        // Find the first aiMessage in the conversation flow
         if (Array.isArray(selectedAgent.conversationFlow)) {
             const initialMessage = selectedAgent.conversationFlow.find(step => step.type === 'aiMessage');
             if (initialMessage && initialMessage.content) {
@@ -57,14 +62,52 @@ export default function TestingPage() {
 
     const newMessages: ChatMessage[] = [...messages, { role: 'user', content: input }]
     setMessages(newMessages)
+    const currentInput = input;
     setInput("")
 
-    // Simulate AI response after a short delay
-    setTimeout(() => {
-        // TODO: Replace this with a real call to the agent's logic
-        const aiResponse = `This is a simulated response from ${selectedAgent.name}. The real conversation logic is not yet implemented.`;
-        setMessages(prev => [...prev, { role: 'assistant', content: aiResponse }])
-    }, 1000)
+    startTransition(async () => {
+      try {
+        // 1. Get text response from the agent
+        const { answer } = await getAssistantResponse({ question: currentInput });
+        setMessages(prev => [...prev, { role: 'assistant', content: answer }]);
+
+        // 2. Convert the response to speech
+        const { audio } = await textToSpeechAction({ text: answer });
+        
+        // 3. Play the audio
+        if (audioRef.current) {
+          audioRef.current.src = audio;
+          audioRef.current.play().catch(e => console.error("Audio playback failed:", e));
+        }
+
+      } catch (error) {
+        console.error("Error in conversation:", error);
+        toast({
+          title: "Error",
+          description: "Failed to get response from the agent. Please try again.",
+          variant: "destructive"
+        })
+      }
+    })
+  }
+  
+  const playLastAgentMessage = async () => {
+    const lastAgentMessage = messages.filter(m => m.role === 'assistant').pop();
+    if (lastAgentMessage) {
+        try {
+            const { audio } = await textToSpeechAction({ text: lastAgentMessage.content });
+            if (audioRef.current) {
+              audioRef.current.src = audio;
+              audioRef.current.play().catch(e => console.error("Audio playback failed:", e));
+            }
+        } catch (error) {
+            toast({
+              title: "Audio Error",
+              description: "Failed to generate audio for the message.",
+              variant: "destructive"
+            })
+        }
+    }
   }
 
   return (
@@ -87,6 +130,16 @@ export default function TestingPage() {
                             </div>
                         </div>
                     ))}
+                    {isThinking && (
+                      <div className="flex items-start gap-3">
+                          <Avatar className="h-8 w-8">
+                              <AvatarFallback>AI</AvatarFallback>
+                          </Avatar>
+                          <div className="rounded-lg p-3 text-sm bg-background animate-pulse">
+                              Thinking...
+                          </div>
+                      </div>
+                    )}
                 </div>
                 <div className="flex items-center gap-2">
                     <Input 
@@ -94,17 +147,21 @@ export default function TestingPage() {
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                        disabled={!selectedAgent}
+                        disabled={!selectedAgent || isThinking}
                     />
-                    <Button size="icon" aria-label="Send message" onClick={handleSendMessage} disabled={!selectedAgent}>
+                    <Button size="icon" aria-label="Send message" onClick={handleSendMessage} disabled={!selectedAgent || isThinking}>
                         <Send className="h-4 w-4" />
                     </Button>
                 </div>
             </CardContent>
-            <CardFooter className="border-t pt-6">
+            <CardFooter className="border-t pt-6 flex items-center justify-between">
                 <Button disabled={!selectedAgent}>
                     <Phone className="mr-2 h-4 w-4" />
                     Start Call
+                </Button>
+                <Button variant="outline" size="icon" onClick={playLastAgentMessage} disabled={isThinking || messages.filter(m => m.role === 'assistant').length === 0}>
+                    <Volume2 className="h-4 w-4" />
+                    <span className="sr-only">Play last message</span>
                 </Button>
             </CardFooter>
             </Card>
@@ -149,8 +206,7 @@ export default function TestingPage() {
                 </CardFooter>
             </Card>
         </div>
+        <audio ref={audioRef} className="hidden" />
     </div>
   )
 }
-
-    
