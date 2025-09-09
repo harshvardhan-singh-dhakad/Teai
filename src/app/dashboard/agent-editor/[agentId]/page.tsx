@@ -57,7 +57,7 @@ const StrictModeDroppable = ({ children, ...props }: any) => {
   if (!enabled) {
     return null;
   }
-  return <Droppable {...props} isDropDisabled={false}>{children}</Droppable>;
+  return <Droppable {...props}>{children}</Droppable>;
 };
 
 
