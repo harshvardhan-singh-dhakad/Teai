@@ -4,7 +4,7 @@
 
 import React, { useEffect, useState, useRef, useTransition } from "react"
 import { notFound, useRouter, useParams } from 'next/navigation'
-import { ArrowLeft, HardDriveUpload, FlaskConical, UploadCloud, FileText, Trash2, Eye, Languages, Mic, BrainCircuit, PhoneForwarded, Voicemail, Bot, Smile, Info, Plus, GripVertical, Phone, Calendar, Slack, Zap, Briefcase, Play, BookText, MessageSquare, BarChart, FileJson, Globe, Database, LoaderCircle, Send, Volume2, PhoneOff, Settings } from "lucide-react"
+import { ArrowLeft, HardDriveUpload, FlaskConical, UploadCloud, FileText, Trash2, Eye, Languages, Mic, BrainCircuit, PhoneForwarded, Voicemail, Bot, Smile, Info, Plus, GripVertical, Phone, Calendar, Slack, Zap, Briefcase, Play, BookText, MessageSquare, BarChart, FileJson, Globe, Database, LoaderCircle, Send, Volume2, PhoneOff, Settings, Check } from "lucide-react"
 import { DragDropContext, Droppable, Draggable, type DropResult } from 'react-beautiful-dnd';
 
 import { Button } from "@/components/ui/button"
@@ -66,7 +66,7 @@ const StrictModeDroppable = ({ children, ...props }: any) => {
   if (!enabled) {
     return null;
   }
-  return <Droppable {...props} isDropDisabled={false}>{children}</Droppable>;
+  return <Droppable {...props}>{children}</Droppable>;
 };
 
 
@@ -199,8 +199,9 @@ export default function AgentEditorPage() {
               <HardDriveUpload className="h-4 w-4 mr-2" />
               {isPublished ? 'Published' : 'Publish'}
             </Button>
-            <Button onClick={handleSaveChanges}>
-                Save Changes
+            <Button disabled className="bg-green-600 hover:bg-green-700">
+                <Check className="mr-2 h-4 w-4" />
+                All changes saved
             </Button>
         </div>
         <Tabs defaultValue="details" className="flex-1 flex flex-col">
@@ -1474,3 +1475,5 @@ function PhoneCallTab({ agent }: { agent: Agent }) {
     )
 }
 
+
+    
