@@ -4,7 +4,7 @@
 
 import React, { useEffect, useState, useRef, useTransition } from "react"
 import { notFound, useRouter, useParams } from 'next/navigation'
-import { ArrowLeft, HardDriveUpload, FlaskConical, UploadCloud, FileText, Trash2, Eye, Languages, Mic, BrainCircuit, PhoneForwarded, Voicemail, Bot, Smile, Info, Plus, GripVertical, Phone, Calendar, Slack, Zap, Briefcase, Play, BookText, MessageSquare, BarChart, FileJson, Globe, Database, LoaderCircle, Send, Volume2, PhoneOff, Settings, Check } from "lucide-react"
+import { ArrowLeft, HardDriveUpload, FlaskConical, UploadCloud, FileText, Trash2, Eye, Languages, Mic, BrainCircuit, PhoneForwarded, Voicemail, Bot, Smile, Info, Plus, GripVertical, Phone, Calendar, Slack, Zap, Briefcase, Play, BookText, MessageSquare, BarChart, FileJson, Globe, Database, LoaderCircle, Send, Volume2, PhoneOff, Settings, Check, Square, Circle } from "lucide-react"
 import { DragDropContext, Droppable, Draggable, type DropResult } from 'react-beautiful-dnd';
 
 import { Button } from "@/components/ui/button"
@@ -397,7 +397,7 @@ function KnowledgeBaseTab({ agent, updateAgent }: { agent: Agent; updateAgent: (
   const [documents, setDocuments] = useState<Document[]>(agent.knowledgeBase || []);
   const [filesToUpload, setFilesToUpload] = useState<File[]>([])
   const [websiteUrl, setWebsiteUrl] = useState("")
-  const [isTraining, setIsTraining] = useState(false)
+  const [isTraining, setIsTraining] = useState(isTraining)
   const [viewingDocument, setViewingDocument] = useState<Document | null>(null);
 
 
@@ -1452,6 +1452,131 @@ function ChatTab({ agent }: { agent: Agent }) {
 }
 
 function WebCallTab({ agent }: { agent: Agent }) {
+    const { toast } = useToast();
+    const [isCallActive, setIsCallActive] = useState(false);
+    const [isListening, setIsListening] = useState(false);
+    const [isThinking, setIsThinking] = useState(false);
+    const [isSpeaking, setIsSpeaking] = useState(false);
+    const [transcript, setTranscript] = useState<ChatMessage[]>([]);
+    
+    const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+    const audioChunksRef = useRef<Blob[]>([]);
+    const audioRef = useRef<HTMLAudioElement | null>(null);
+    const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    const addMessageToTranscript = (message: ChatMessage) => {
+        setTranscript(prev => [...prev, message]);
+    }
+
+    const processAudio = async (audioBlob: Blob) => {
+        setIsListening(false);
+        setIsThinking(true);
+        try {
+            const reader = new FileReader();
+            reader.readAsDataURL(audioBlob);
+            reader.onloadend = async () => {
+                const base64Audio = reader.result as string;
+                
+                // 1. Speech to Text
+                const { text: userText } = await speechToTextAction({ audio: base64Audio });
+                addMessageToTranscript({ role: 'user', content: userText });
+
+                // 2. Get AI Response
+                const { answer: aiText } = await getAssistantResponse({ question: userText });
+                addMessageToTranscript({ role: 'assistant', content: aiText });
+                
+                // 3. Text to Speech
+                setIsThinking(false);
+                setIsSpeaking(true);
+                const { audio: aiAudio } = await textToSpeechAction({ text: aiText, voice: agent.configurations?.voice?.voiceId });
+                
+                if (audioRef.current) {
+                    audioRef.current.src = aiAudio;
+                    audioRef.current.play();
+                    audioRef.current.onended = () => {
+                        setIsSpeaking(false);
+                        if (isCallActive) {
+                           startListening(); // Listen for the next user input
+                        }
+                    };
+                }
+            };
+        } catch (error) {
+            console.error("Error processing audio:", error);
+            toast({ title: "Error", description: "Could not process audio. Please try again.", variant: "destructive" });
+            setIsThinking(false);
+            setIsSpeaking(false);
+        }
+    };
+    
+    const startListening = () => {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+            mediaRecorderRef.current.stop();
+        }
+        
+        navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(stream => {
+                mediaRecorderRef.current = new MediaRecorder(stream);
+                audioChunksRef.current = [];
+
+                mediaRecorderRef.current.ondataavailable = event => {
+                    audioChunksRef.current.push(event.data);
+                };
+
+                mediaRecorderRef.current.onstop = () => {
+                    const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+                    processAudio(audioBlob);
+                };
+                
+                mediaRecorderRef.current.start();
+                setIsListening(true);
+
+                // Voice Activity Detection (simple version)
+                silenceTimeoutRef.current = setTimeout(() => {
+                    if (mediaRecorderRef.current?.state === 'recording') {
+                        mediaRecorderRef.current.stop();
+                    }
+                }, 5000); // Stop after 5s of silence/recording
+            })
+            .catch(err => {
+                console.error("Mic access denied:", err);
+                toast({ title: "Microphone Access Denied", description: "Please allow microphone access to use this feature.", variant: "destructive"});
+                setIsCallActive(false);
+            });
+    };
+
+    const handleStartCall = () => {
+        setIsCallActive(true);
+        setTranscript([]);
+        addMessageToTranscript({ role: 'assistant', content: "Hello, I am your agent. How can I help you today?" });
+        startListening();
+    };
+
+    const handleStopCall = () => {
+        setIsCallActive(false);
+        setIsListening(false);
+        setIsThinking(false);
+        setIsSpeaking(false);
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+            mediaRecorderRef.current.stop();
+        }
+        if (silenceTimeoutRef.current) {
+            clearTimeout(silenceTimeoutRef.current);
+        }
+         if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current.src = "";
+        }
+    };
+    
+    useEffect(() => {
+        return () => { // Cleanup on component unmount
+            handleStopCall();
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+
    return (
     <Card className="mt-4">
         <CardHeader>
@@ -1465,11 +1590,39 @@ function WebCallTab({ agent }: { agent: Agent }) {
                    Your free plan includes 12 minutes of web call time.
                 </AlertDescription>
             </Alert>
-            <div className="p-4 border-2 border-dashed rounded-lg min-h-[200px] flex flex-col items-center justify-center text-center bg-secondary/30">
-                <p className="text-muted-foreground mb-4">Live transcription will appear here...</p>
-                <Button><Mic className="mr-2" /> Start Web Call</Button>
+            <div className="p-4 border-2 border-dashed rounded-lg min-h-[300px] flex flex-col items-center justify-center text-center bg-secondary/30 space-y-4">
+                 <div className="flex items-center gap-4 text-sm font-medium">
+                     <div className={cn("flex items-center gap-2", isListening ? "text-primary" : "text-muted-foreground")}>
+                        {isListening ? <LoaderCircle className="animate-spin h-4 w-4"/> : <Circle className="h-3 w-3 fill-current"/> }
+                        Listening
+                     </div>
+                      <div className={cn("flex items-center gap-2", isThinking ? "text-primary" : "text-muted-foreground")}>
+                        {isThinking ? <LoaderCircle className="animate-spin h-4 w-4"/> : <Circle className="h-3 w-3 fill-current"/> }
+                        Thinking
+                     </div>
+                      <div className={cn("flex items-center gap-2", isSpeaking ? "text-primary" : "text-muted-foreground")}>
+                        {isSpeaking ? <LoaderCircle className="animate-spin h-4 w-4"/> : <Circle className="h-3 w-3 fill-current"/> }
+                        Speaking
+                     </div>
+                 </div>
+
+                <ScrollArea className="h-48 w-full bg-background rounded-md p-2 text-left">
+                    {transcript.map((msg, i) => (
+                        <div key={i} className="text-sm">
+                           <span className={cn("font-bold", msg.role === 'user' ? 'text-blue-400' : 'text-purple-400')}>{msg.role === 'user' ? "You" : "Agent"}:</span> {msg.content}
+                        </div>
+                    ))}
+                    {transcript.length === 0 && <p className="text-muted-foreground">Live transcription will appear here...</p>}
+                </ScrollArea>
+                
+                {!isCallActive ? (
+                    <Button onClick={handleStartCall}><Mic className="mr-2" /> Start Web Call</Button>
+                ) : (
+                    <Button onClick={handleStopCall} variant="destructive"><PhoneOff className="mr-2" /> Stop Call</Button>
+                )}
             </div>
         </CardContent>
+         <audio ref={audioRef} className="hidden" />
     </Card>
    )
 }
@@ -1512,5 +1665,7 @@ function PhoneCallTab({ agent }: { agent: Agent }) {
     )
 }
 
+
+    
 
     
