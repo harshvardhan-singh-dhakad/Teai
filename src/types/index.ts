@@ -58,6 +58,13 @@ export type SpeechToTextOutput = z.infer<typeof SpeechToTextOutputSchema>;
 
 export type ConversationStep = z.infer<typeof ConversationStepSchema>;
 
+export type Document = {
+  name: string;
+  size: string;
+  date: string;
+  status: "Active" | "Processing";
+};
+
 export type Agent = {
   id: string;
   name: string;
@@ -65,6 +72,7 @@ export type Agent = {
   conversationFlow: ConversationStep[] | string; // Can be a structured flow or a simple string for backward compatibility
   status: 'draft' | 'published';
   avatar?: string;
+  knowledgeBase?: Document[];
   integrations?: {
     twilio?: {accountSid: string; authToken: string; phoneNumber: string};
     googleCalendar?: {apiKey: string};
