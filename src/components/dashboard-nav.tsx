@@ -18,7 +18,6 @@ const navItems = [
   { href: "/dashboard/integrations", icon: Icons.webhook, label: "Integrations" },
   { href: "/dashboard/deployment", icon: Icons.globe, label: "Deployment" },
   { href: "/dashboard/analytics", icon: Icons.barChart, label: "Analytics" },
-  { href: "/dashboard/testing", icon: Icons.flask, label: "Testing" },
   { href: "/dashboard/billing", icon: Icons.creditCard, label: "Billing" },
   { href: "/dashboard/admin", icon: Icons.shield, label: "Admin" },
 ]

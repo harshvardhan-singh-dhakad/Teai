@@ -1,9 +1,9 @@
 
 "use client"
 
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useState, useRef, useTransition } from "react"
 import { notFound, useRouter, useParams } from 'next/navigation'
-import { ArrowLeft, HardDriveUpload, FlaskConical, UploadCloud, FileText, Trash2, Eye, Languages, Mic, BrainCircuit, PhoneForwarded, Voicemail, Bot, Smile, Info, Plus, GripVertical, Phone, Calendar, Slack, Zap, Briefcase, Play, BookText, MessageSquare, BarChart, FileJson, Globe, Database, LoaderCircle } from "lucide-react"
+import { ArrowLeft, HardDriveUpload, FlaskConical, UploadCloud, FileText, Trash2, Eye, Languages, Mic, BrainCircuit, PhoneForwarded, Voicemail, Bot, Smile, Info, Plus, GripVertical, Phone, Calendar, Slack, Zap, Briefcase, Play, BookText, MessageSquare, BarChart, FileJson, Globe, Database, LoaderCircle, Send, Volume2, PhoneOff, Settings } from "lucide-react"
 import { DragDropContext, Droppable, Draggable, type DropResult } from 'react-beautiful-dnd';
 
 import { Button } from "@/components/ui/button"
@@ -33,7 +33,7 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
-import type { Agent, Document, ConversationStep, Integration, Voice, PostCallConfig, ExtractedVariable } from "@/types"
+import type { Agent, Document, ConversationStep, Integration, Voice, PostCallConfig, ExtractedVariable, ChatMessage } from "@/types"
 import { useLocalStorage } from "@/hooks/use-local-storage"
 import { AssistantChatbot } from "@/components/assistant-chatbot"
 import { useToast } from "@/hooks/use-toast"
@@ -48,7 +48,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Checkbox } from "@/components/ui/checkbox"
 import { cn } from "@/lib/utils"
-import { trainFromWebsiteAction } from "@/app/actions"
+import { trainFromWebsiteAction, getAssistantResponse, textToSpeechAction, speechToTextAction } from "@/app/actions"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 
 // Helper component to avoid "can't find node" error with react-beautiful-dnd in React 18 strict mode
@@ -152,11 +153,6 @@ export default function AgentEditorPage() {
      })
   }
 
-  const handleTest = () => {
-    if (!agent) return;
-    router.push(`/dashboard/testing?agentId=${agent.id}`)
-  }
-
   if (!agent) {
     return (
         <div className="flex items-center justify-center h-full">
@@ -197,10 +193,7 @@ export default function AgentEditorPage() {
       {/* Right Column: Configuration */}
       <div className="lg:col-span-2 flex flex-col gap-4">
         <div className="flex items-center justify-end gap-2">
-            <Button variant="outline" onClick={handleTest}>
-              <FlaskConical className="h-4 w-4 mr-2" />
-              Test Agent
-            </Button>
+            <TestAgentDialog agent={agent} />
             <Button onClick={handlePublish} disabled={isPublished}>
               <HardDriveUpload className="h-4 w-4 mr-2" />
               {isPublished ? 'Published' : 'Publish'}
@@ -343,20 +336,18 @@ function DetailsTab({ agent, updateAgent }: { agent: Agent; updateAgent: (data: 
                                      <Draggable key={step.id} draggableId={step.id} index={index}>
                                         {(provided) => (
                                             <div ref={provided.innerRef} {...provided.draggableProps} >
-                                                <AccordionItem value={`item-${index}`} className="relative group">
-                                                     <div className="flex items-center justify-between p-3 rounded-md hover:bg-muted/50 [&[data-state=open]]:bg-muted/80">
-                                                        <AccordionTrigger className="flex-1 p-0">
-                                                             <div className="flex items-center gap-4 flex-1" {...provided.dragHandleProps}>
-                                                                <GripVertical className="h-5 w-5 text-muted-foreground" />
-                                                                <span className="font-semibold">{index + 1}. {step.title}</span>
-                                                            </div>
-                                                        </AccordionTrigger>
-                                                        <div className="flex items-center gap-4 ml-4">
-                                                            <Switch checked={true} />
-                                                            <Button size="icon" variant="ghost" onClick={() => removeStep(index)} className="h-8 w-8">
-                                                                <Trash2 className="h-4 w-4" />
-                                                            </Button>
+                                                <AccordionItem value={`item-${index}`} className="relative group border rounded-md px-3">
+                                                    <AccordionTrigger className="flex-1 p-0 hover:no-underline">
+                                                        <div className="flex items-center gap-4 flex-1" {...provided.dragHandleProps}>
+                                                            <GripVertical className="h-5 w-5 text-muted-foreground" />
+                                                            <span className="font-semibold">{index + 1}. {step.title}</span>
                                                         </div>
+                                                    </AccordionTrigger>
+                                                    <div className="absolute right-3 top-3 flex items-center gap-4 ml-4">
+                                                        <Switch checked={true} />
+                                                        <Button size="icon" variant="ghost" onClick={() => removeStep(index)} className="h-8 w-8">
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
                                                     </div>
                                                     <AccordionContent className="p-4 pt-0">
                                                         <Textarea 
@@ -390,13 +381,11 @@ function DetailsTab({ agent, updateAgent }: { agent: Agent; updateAgent: (data: 
 
 function KnowledgeBaseTab({ agent, updateAgent }: { agent: Agent; updateAgent: (data: Partial<Agent>) => void; }) {
   const { toast } = useToast()
-  // This state will now be managed within the agent editor
   const [documents, setDocuments] = useState<Document[]>(agent.knowledgeBase || []);
   const [filesToUpload, setFilesToUpload] = useState<File[]>([])
   const [websiteUrl, setWebsiteUrl] = useState("")
   const [isTraining, setIsTraining] = useState(false)
 
-  // When documents change, update the agent's knowledgeBase
   useEffect(() => {
     updateAgent({ knowledgeBase: documents });
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1166,9 +1155,9 @@ function PostCallTab({ agent, updateAgent }: { agent: Agent, updateAgent: (data:
                     <AccordionTrigger className="text-base font-semibold hover:no-underline flex-1">
                        <span>Configuration #{index + 1}</span>
                     </AccordionTrigger>
-                    <Button size="icon" variant="ghost" onClick={() => removeConfig(config.id)} className="h-8 w-8">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                     <Button size="icon" variant="ghost" onClick={() => removeConfig(config.id)} className="h-8 w-8">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                   </div>
                   <AccordionContent className="p-4 pt-0 space-y-6">
                     <div className="space-y-2">
@@ -1248,3 +1237,236 @@ function PostCallTab({ agent, updateAgent }: { agent: Agent, updateAgent: (data:
   );
 }
 
+
+function TestAgentDialog({ agent }: { agent: Agent }) {
+  const { toast } = useToast()
+  const [agents] = useLocalStorage<Agent[]>("agents", [])
+  const [selectedAgentId, setSelectedAgentId] = useState<string | undefined>(agent.id)
+  
+  const selectedAgent = agents.find(a => a.id === selectedAgentId) || agent;
+
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+         <Button variant="outline">
+            <FlaskConical className="h-4 w-4 mr-2" />
+            Test Agent
+          </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-3xl">
+        <DialogHeader>
+          <DialogTitle>Test your Agent</DialogTitle>
+          <DialogDescription>
+            Interact with your agent using different channels to test its responses and integrations.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="py-4">
+            <Label htmlFor="select-agent-test">Select Agent</Label>
+            <Select onValueChange={setSelectedAgentId} value={selectedAgentId}>
+                <SelectTrigger id="select-agent-test">
+                    <SelectValue placeholder="Select an agent" />
+                </SelectTrigger>
+                <SelectContent>
+                    {agents.length > 0 ? (
+                        agents.map(a => (
+                            <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+                        ))
+                    ) : (
+                        <SelectItem value="no-agent" disabled>No agents found</SelectItem>
+                    )}
+                </SelectContent>
+            </Select>
+        </div>
+
+        <Tabs defaultValue="chat" className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="chat">Chat</TabsTrigger>
+                <TabsTrigger value="web-call">Web Call</TabsTrigger>
+                <TabsTrigger value="phone-call">Phone Call</TabsTrigger>
+            </TabsList>
+            <TabsContent value="chat">
+                <ChatTab agent={selectedAgent} />
+            </TabsContent>
+            <TabsContent value="web-call">
+                <WebCallTab agent={selectedAgent} />
+            </TabsContent>
+            <TabsContent value="phone-call">
+                <PhoneCallTab agent={selectedAgent} />
+            </TabsContent>
+        </Tabs>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function ChatTab({ agent }: { agent: Agent }) {
+  const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [input, setInput] = useState("")
+  const [isThinking, startTransition] = useTransition()
+  const scrollAreaRef = useRef<HTMLDivElement>(null)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const { toast } = useToast()
+
+  useEffect(() => {
+    // Auto-scroll to bottom
+    if (scrollAreaRef.current) {
+        scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
+    }
+  }, [messages])
+
+  useEffect(() => {
+    if (Array.isArray(agent.conversationFlow)) {
+        const initialMessage = agent.conversationFlow.find(step => step.type === 'aiMessage');
+        if (initialMessage && initialMessage.content) {
+            setMessages([{ role: 'assistant', content: initialMessage.content }]);
+        } else {
+             setMessages([{ role: 'assistant', content: "Hello! I am ready to start the conversation." }])
+        }
+    } else {
+        setMessages([{ role: 'assistant', content: "Hello! This is your selected agent. How can I help?" }])
+    }
+  }, [agent])
+
+  const handleSendMessage = () => {
+    if (!input.trim()) return
+
+    const newMessages: ChatMessage[] = [...messages, { role: 'user', content: input }]
+    setMessages(newMessages)
+    const currentInput = input;
+    setInput("")
+
+    startTransition(async () => {
+      try {
+        const { answer } = await getAssistantResponse({ question: currentInput });
+        setMessages(prev => [...prev, { role: 'assistant', content: answer }]);
+
+        const { audio } = await textToSpeechAction({ text: answer, voice: agent.configurations?.voice?.voiceId });
+        
+        if (audioRef.current) {
+          audioRef.current.src = audio;
+          audioRef.current.play().catch(e => console.error("Audio playback failed:", e));
+        }
+
+      } catch (error) {
+        console.error("Error in conversation:", error);
+        toast({
+          title: "Error",
+          description: "Failed to get response from the agent. Please try again.",
+          variant: "destructive"
+        })
+      }
+    })
+  }
+
+  return (
+    <Card className="mt-4">
+        <CardHeader>
+            <CardTitle>Chat with Agent</CardTitle>
+            <CardDescription>Test your assistant in a text-based conversation.</CardDescription>
+        </CardHeader>
+        <CardContent>
+            <ScrollArea className="h-72 w-full pr-4" ref={scrollAreaRef}>
+                <div className="space-y-4">
+                     {messages.map((message, index) => (
+                         <div key={index} className={`flex items-start gap-3 ${message.role === 'user' ? 'flex-row-reverse' : ''}`}>
+                            <Avatar className="h-8 w-8">
+                                <AvatarFallback>{message.role === 'assistant' ? 'AI' : 'You'}</AvatarFallback>
+                            </Avatar>
+                            <div className={`rounded-lg p-3 text-sm max-w-[80%] ${message.role === 'assistant' ? 'bg-secondary' : 'bg-primary text-primary-foreground'}`}>
+                                <p>{message.content}</p>
+                            </div>
+                        </div>
+                    ))}
+                     {isThinking && (
+                      <div className="flex items-start gap-3">
+                          <Avatar className="h-8 w-8">
+                              <AvatarFallback>AI</AvatarFallback>
+                          </Avatar>
+                          <div className="rounded-lg p-3 text-sm bg-secondary animate-pulse">
+                              Thinking...
+                          </div>
+                      </div>
+                    )}
+                </div>
+            </ScrollArea>
+        </CardContent>
+        <CardFooter className="border-t pt-6">
+            <div className="flex w-full items-center gap-2">
+                 <Input 
+                    placeholder="Type your response..." 
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                    disabled={isThinking}
+                />
+                <Button size="icon" aria-label="Send message" onClick={handleSendMessage} disabled={isThinking}>
+                    <Send className="h-4 w-4" />
+                </Button>
+            </div>
+        </CardFooter>
+        <audio ref={audioRef} className="hidden" />
+    </Card>
+  )
+}
+
+function WebCallTab({ agent }: { agent: Agent }) {
+   return (
+    <Card className="mt-4">
+        <CardHeader>
+            <CardTitle>Web Call with Agent</CardTitle>
+            <CardDescription>Start an in-browser call with your agent using your microphone.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+            <Alert>
+                <Info className="h-4 w-4" />
+                <AlertDescription>
+                   Your free plan includes 12 minutes of web call time.
+                </AlertDescription>
+            </Alert>
+            <div className="p-4 border-2 border-dashed rounded-lg min-h-[200px] flex flex-col items-center justify-center text-center bg-secondary/30">
+                <p className="text-muted-foreground mb-4">Live transcription will appear here...</p>
+                <Button><Mic className="mr-2" /> Start Web Call</Button>
+            </div>
+        </CardContent>
+    </Card>
+   )
+}
+
+function PhoneCallTab({ agent }: { agent: Agent }) {
+    return (
+        <Card className="mt-4">
+            <CardHeader>
+                <CardTitle>Phone Call with Agent</CardTitle>
+                <CardDescription>Receive a call on your phone to test the agent.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className="flex gap-2">
+                    <Select defaultValue="+91">
+                        <SelectTrigger className="w-[80px]">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="+91">IN +91</SelectItem>
+                            <SelectItem value="+1">US +1</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <Input placeholder="Your phone number" />
+                </div>
+                 <Alert variant="destructive">
+                    <Info className="h-4 w-4" />
+                    <AlertTitle>Upgrade Required</AlertTitle>
+                    <AlertDescription>
+                       Free plan: Max 2 calls, 2 minutes each.
+                       <Button variant="link" className="p-0 h-auto ml-1">Upgrade Now.</Button>
+                    </AlertDescription>
+                </Alert>
+                <div className="p-4 border-2 border-dashed rounded-lg min-h-[150px] flex flex-col items-center justify-center text-center bg-secondary/30">
+                    <p className="text-muted-foreground mb-4">Call logs will appear here...</p>
+                    <Button><Phone className="mr-2" /> Start Phone Call</Button>
+                </div>
+                <p className="text-xs text-muted-foreground text-center">You should receive the call within 2 minutes.</p>
+            </CardContent>
+        </Card>
+    )
+}
