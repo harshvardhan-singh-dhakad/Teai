@@ -76,6 +76,8 @@ export default function AgentEditorPage() {
   const { toast } = useToast()
   const [agents, setAgents] = useLocalStorage<Agent[]>("agents", [])
   const [agent, setAgent] = useState<Agent | undefined>(undefined)
+  const [hasUnpublishedChanges, setHasUnpublishedChanges] = useState(false);
+
 
   useEffect(() => {
     const agentId = params.agentId as string;
@@ -93,6 +95,9 @@ export default function AgentEditorPage() {
             }));
         }
         setAgent(currentAgent)
+        if (currentAgent.status === 'published') {
+            setHasUnpublishedChanges(false);
+        }
       } else {
         notFound()
       }
@@ -106,6 +111,9 @@ export default function AgentEditorPage() {
     setAgents(prevAgents => 
       prevAgents.map(a => a.id === agent.id ? updatedAgent : a)
     );
+     if (agent.status === 'published') {
+      setHasUnpublishedChanges(true);
+    }
   }
   
   const updateAgentConfig = (configSection: keyof NonNullable<Agent['configurations']>, key: string, value: any) => {
@@ -138,6 +146,7 @@ export default function AgentEditorPage() {
     if (!agent) return
     
     updateAgent({ status: 'published' });
+    setHasUnpublishedChanges(false);
     toast({
       title: "Agent Published!",
       description: `"${agent.name}" is now live.`,
@@ -162,7 +171,7 @@ export default function AgentEditorPage() {
     )
   }
 
-  const isPublished = agent.status === 'published';
+  const isPublished = agent.status === 'published' && !hasUnpublishedChanges;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-full">
