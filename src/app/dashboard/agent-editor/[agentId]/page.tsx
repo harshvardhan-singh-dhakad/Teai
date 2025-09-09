@@ -4,7 +4,7 @@
 
 import React, { useEffect, useState, useRef, useTransition } from "react"
 import { notFound, useRouter, useParams } from 'next/navigation'
-import { ArrowLeft, HardDriveUpload, FlaskConical, UploadCloud, FileText, Trash2, Eye, Languages, Mic, BrainCircuit, PhoneForwarded, Voicemail, Bot, Smile, Info, Plus, GripVertical, Phone, Calendar, Slack, Zap, Briefcase, Play, BookText, MessageSquare, BarChart, FileJson, Globe, Database, LoaderCircle, Send, Volume2, PhoneOff, Settings, Check, Square, Circle } from "lucide-react"
+import { ArrowLeft, HardDriveUpload, FlaskConical, UploadCloud, FileText, Trash2, Eye, Languages, Mic, BrainCircuit, PhoneForwarded, Voicemail, Bot, Smile, Info, Plus, GripVertical, Phone, Calendar, Slack, Zap, Briefcase, Play, BookText, MessageSquare, BarChart, FileJson, Globe, Database, LoaderCircle, Send, Volume2, PhoneOff, Settings, Check, Square, Circle, Archive } from "lucide-react"
 import { DragDropContext, Droppable, Draggable, type DropResult } from 'react-beautiful-dnd';
 
 import { Button } from "@/components/ui/button"
@@ -153,6 +153,17 @@ export default function AgentEditorPage() {
     })
   }
   
+  const handleUnpublish = () => {
+    if (!agent) return;
+    updateAgent({ status: 'draft' });
+    setHasUnpublishedChanges(false); // Reset changes status
+    toast({
+      title: "Agent Unpublished",
+      description: `"${agent.name}" is now a draft.`,
+      variant: 'destructive'
+    });
+  };
+  
   const handleSaveChanges = () => {
     if(!agent) return;
      // The useLocalStorage hook already saves on every change,
@@ -204,10 +215,17 @@ export default function AgentEditorPage() {
       <div className="lg:col-span-2 flex flex-col gap-4">
         <div className="flex items-center justify-end gap-2">
             <TestAgentDialog agent={agent} />
-            <Button onClick={handlePublish} disabled={isPublished}>
-              <HardDriveUpload className="h-4 w-4 mr-2" />
-              {isPublished ? 'Published' : 'Publish'}
-            </Button>
+            {isPublished ? (
+              <Button onClick={handleUnpublish} variant="outline">
+                <Archive className="h-4 w-4 mr-2" />
+                Unpublish
+              </Button>
+            ) : (
+              <Button onClick={handlePublish}>
+                <HardDriveUpload className="h-4 w-4 mr-2" />
+                Publish
+              </Button>
+            )}
             <Button disabled className="bg-green-600 hover:bg-green-700">
                 <Check className="mr-2 h-4 w-4" />
                 All changes saved
@@ -397,7 +415,7 @@ function KnowledgeBaseTab({ agent, updateAgent }: { agent: Agent; updateAgent: (
   const [documents, setDocuments] = useState<Document[]>(agent.knowledgeBase || []);
   const [filesToUpload, setFilesToUpload] = useState<File[]>([])
   const [websiteUrl, setWebsiteUrl] = useState("")
-  const [isTraining, setIsTraining] = useState(isTraining)
+  const [isTraining, setIsTraining] = useState(false)
   const [viewingDocument, setViewingDocument] = useState<Document | null>(null);
 
 
