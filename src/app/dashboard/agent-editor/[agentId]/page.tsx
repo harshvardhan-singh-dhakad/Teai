@@ -398,6 +398,8 @@ function KnowledgeBaseTab({ agent, updateAgent }: { agent: Agent; updateAgent: (
   const [filesToUpload, setFilesToUpload] = useState<File[]>([])
   const [websiteUrl, setWebsiteUrl] = useState("")
   const [isTraining, setIsTraining] = useState(false)
+  const [viewingDocument, setViewingDocument] = useState<Document | null>(null);
+
 
   useEffect(() => {
     updateAgent({ knowledgeBase: documents });
@@ -431,7 +433,8 @@ function KnowledgeBaseTab({ agent, updateAgent }: { agent: Agent; updateAgent: (
         source: file.name,
         size: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
         status: "Active",
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        content: `Simulated content for ${file.name}`
     }));
     
     setDocuments(prev => [...prev, ...newDocuments]);
@@ -446,7 +449,7 @@ function KnowledgeBaseTab({ agent, updateAgent }: { agent: Agent; updateAgent: (
     }
     setIsTraining(true);
      try {
-        const { title, charCount } = await trainFromWebsiteAction({ url: websiteUrl });
+        const { title, charCount, content } = await trainFromWebsiteAction({ url: websiteUrl });
         
         const newDocument: Document = {
             id: `doc-${Date.now()}`,
@@ -455,7 +458,8 @@ function KnowledgeBaseTab({ agent, updateAgent }: { agent: Agent; updateAgent: (
             source: websiteUrl,
             size: `${(charCount / 1024).toFixed(2)} KB`,
             status: "Active",
-            createdAt: new Date().toISOString()
+            createdAt: new Date().toISOString(),
+            content: content,
         }
 
         setDocuments(prev => [newDocument, ...prev]);
@@ -588,7 +592,10 @@ function KnowledgeBaseTab({ agent, updateAgent }: { agent: Agent; updateAgent: (
                               {doc.status}
                             </Badge>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="flex gap-1">
+                             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setViewingDocument(doc)}>
+                              <Eye className="h-4 w-4" />
+                            </Button>
                             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDelete(doc.id)}>
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -610,6 +617,27 @@ function KnowledgeBaseTab({ agent, updateAgent }: { agent: Agent; updateAgent: (
               </Card>
           </div>
         </div>
+
+        {viewingDocument && (
+            <Dialog open={!!viewingDocument} onOpenChange={(open) => !open && setViewingDocument(null)}>
+                <DialogContent className="sm:max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle>View Document: {viewingDocument.name}</DialogTitle>
+                        <DialogDescription>
+                           Source: {viewingDocument.source}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <ScrollArea className="max-h-[60vh] my-4 pr-4">
+                        <pre className="text-sm whitespace-pre-wrap font-sans">
+                            {viewingDocument.content}
+                        </pre>
+                    </ScrollArea>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setViewingDocument(null)}>Close</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        )}
     </div>
   )
 }

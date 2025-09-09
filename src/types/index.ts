@@ -68,6 +68,7 @@ export type Document = {
   size: string;
   status: "Active" | "Training";
   createdAt: string;
+  content: string;
 };
 
 type IntegrationCredentials = {
