@@ -61,10 +61,13 @@ export type SpeechToTextOutput = z.infer<typeof SpeechToTextOutputSchema>;
 export type ConversationStep = z.infer<typeof ConversationStepSchema>;
 
 export type Document = {
+  id: string;
   name: string;
+  type: "file" | "website";
+  source: string;
   size: string;
-  date: string;
-  status: "Active" | "Processing";
+  status: "Active" | "Training";
+  createdAt: string;
 };
 
 type IntegrationCredentials = {
@@ -176,4 +179,14 @@ export type Voice = {
     engine: string;
 }
 
-    
+export const TrainFromWebsiteInputSchema = z.object({
+  url: z.string().describe('The URL of the website to scrape.'),
+});
+export type TrainFromWebsiteInput = z.infer<typeof TrainFromWebsiteInputSchema>;
+
+export const TrainFromWebsiteOutputSchema = z.object({
+  title: z.string().describe('The extracted title of the website.'),
+  content: z.string().describe('The extracted main content of the website.'),
+  charCount: z.number().describe('The character count of the content.'),
+});
+export type TrainFromWebsiteOutput = z.infer<typeof TrainFromWebsiteOutputSchema>;

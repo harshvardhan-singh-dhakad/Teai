@@ -1,3 +1,4 @@
+
 'use server';
 
 import { enhanceUserPrompt, EnhanceUserPromptInput, EnhanceUserPromptOutput } from '@/ai/flows/enhance-user-prompt';
@@ -5,7 +6,8 @@ import { createAgentFromPrompt, CreateAgentInput, CreateAgentOutput } from '@/ai
 import { assistantHelper, AssistantHelperInput, AssistantHelperOutput } from '@/ai/flows/assistant-helper';
 import { textToSpeech } from '@/ai/flows/tts-flow';
 import { speechToText } from '@/ai/flows/stt-flow';
-import type { TextToSpeechInput, TextToSpeechOutput, SpeechToTextInput, SpeechToTextOutput } from '@/types';
+import { trainFromWebsite } from '@/ai/flows/train-from-website';
+import type { TextToSpeechInput, TextToSpeechOutput, SpeechToTextInput, SpeechToTextOutput, TrainFromWebsiteInput, TrainFromWebsiteOutput } from '@/types';
 
 export async function enhancePromptAction(input: EnhanceUserPromptInput): Promise<EnhanceUserPromptOutput> {
   try {
@@ -49,5 +51,14 @@ export async function speechToTextAction(input: SpeechToTextInput): Promise<Spee
     } catch (error) {
         console.error('Error converting speech to text:', error);
         throw new Error('Failed to convert speech to text.');
+    }
+}
+
+export async function trainFromWebsiteAction(input: TrainFromWebsiteInput): Promise<TrainFromWebsiteOutput> {
+    try {
+        return await trainFromWebsite(input);
+    } catch (error) {
+        console.error('Error training from website:', error);
+        throw new Error('Failed to train from website.');
     }
 }
