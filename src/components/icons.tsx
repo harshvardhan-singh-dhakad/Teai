@@ -1,5 +1,6 @@
+
 import type { SVGProps } from "react";
-import { Bot, Globe, BarChart, CreditCard, Shield, Settings, FlaskConical, Github, Zap } from 'lucide-react';
+import { Bot, Globe, BarChart, CreditCard, Shield, Settings, FlaskConical, Github, Zap, Webhook } from 'lucide-react';
 
 export const Icons = {
   logo: (props: SVGProps<SVGSVGElement>) => (
@@ -40,4 +41,5 @@ export const Icons = {
   flask: FlaskConical,
   github: Github,
   zap: Zap,
+  webhook: Webhook,
 };
