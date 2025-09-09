@@ -1,9 +1,11 @@
 
 "use client"
 
-import { useEffect, useState } from "react"
+import React, { useEffect, useState } from "react"
 import { notFound, useRouter, useParams } from 'next/navigation'
-import { ArrowLeft, HardDriveUpload, FlaskConical, Webhook, UploadCloud, FileText, Trash2, Eye, Languages, Mic, BrainCircuit, PhoneForwarded, Voicemail, Bot, Smile } from "lucide-react"
+import { ArrowLeft, HardDriveUpload, FlaskConical, Webhook, UploadCloud, FileText, Trash2, Eye, Languages, Mic, BrainCircuit, PhoneForwarded, Voicemail, Bot, Smile, Info, Plus, GripVertical } from "lucide-react"
+import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
+
 
 import { Button } from "@/components/ui/button"
 import {
@@ -31,7 +33,7 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
-import type { Agent, Document } from "@/types"
+import type { Agent, Document, ConversationStep } from "@/types"
 import { useLocalStorage } from "@/hooks/use-local-storage"
 import { AssistantChatbot } from "@/components/assistant-chatbot"
 import { useToast } from "@/hooks/use-toast"
@@ -55,6 +57,10 @@ export default function AgentEditorPage() {
     if (agentId && agents.length > 0) {
       const currentAgent = agents.find(a => a.id === agentId)
       if (currentAgent) {
+        // Ensure conversationFlow is an array
+        if (typeof currentAgent.conversationFlow === 'string' || !currentAgent.conversationFlow) {
+            currentAgent.conversationFlow = [];
+        }
         setAgent(currentAgent)
       } else {
         notFound()
@@ -173,30 +179,7 @@ export default function AgentEditorPage() {
           </TabsList>
           <div className="mt-4 flex-1">
             <TabsContent value="details" className="h-full">
-              <Card className="h-full">
-                <CardHeader>
-                  <CardTitle>Agent Details</CardTitle>
-                  <CardDescription>
-                    Define the core identity of your agent. The conversation flow will be managed here.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="agent-name">Agent Name</Label>
-                    <Input id="agent-name" value={agent.name} onChange={e => updateAgent({ name: e.target.value })} />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="agent-description">Description</Label>
-                    <Textarea id="agent-description" value={agent.description} onChange={e => updateAgent({ description: e.target.value })} />
-                  </div>
-                   <div className="grid gap-2">
-                        <Label>Conversation Flow</Label>
-                        <div className="p-4 border-2 border-dashed rounded-lg min-h-[300px] flex flex-col items-center justify-center text-center bg-secondary/30">
-                            <p className="text-muted-foreground">Drag-and-drop conversation builder coming soon!</p>
-                        </div>
-                    </div>
-                </CardContent>
-              </Card>
+                <DetailsTab agent={agent} updateAgent={updateAgent} />
             </TabsContent>
              <TabsContent value="knowledge-base" className="h-full">
                 <KnowledgeBaseTab agent={agent} updateAgent={updateAgent} />
@@ -250,6 +233,132 @@ export default function AgentEditorPage() {
           </div>
         </Tabs>
       </div>
+    </div>
+  )
+}
+
+function DetailsTab({ agent, updateAgent }: { agent: Agent; updateAgent: (data: Partial<Agent>) => void; }) {
+  
+  const conversationFlow = Array.isArray(agent.conversationFlow) ? agent.conversationFlow : [];
+
+  const onDragEnd = (result: DropResult) => {
+    if (!result.destination) return;
+    const items = Array.from(conversationFlow);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+    updateAgent({ conversationFlow: items });
+  };
+  
+  const addStep = () => {
+    const newStep: ConversationStep = {
+        type: 'aiMessage',
+        title: `New Step ${conversationFlow.length + 1}`,
+        content: ''
+    };
+    updateAgent({ conversationFlow: [...conversationFlow, newStep] });
+  };
+
+  const removeStep = (index: number) => {
+    const newFlow = [...conversationFlow];
+    newFlow.splice(index, 1);
+    updateAgent({ conversationFlow: newFlow });
+  };
+  
+  const updateStep = (index: number, updatedStep: Partial<ConversationStep>) => {
+    const newFlow = [...conversationFlow];
+    newFlow[index] = { ...newFlow[index], ...updatedStep };
+    updateAgent({ conversationFlow: newFlow });
+  };
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>Agent Details</CardTitle>
+          <CardDescription>
+            Define the core identity of your agent.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-2">
+            <Label htmlFor="agent-name">Agent Name</Label>
+            <Input id="agent-name" value={agent.name} onChange={e => updateAgent({ name: e.target.value })} />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="agent-description">Description</Label>
+            <Textarea id="agent-description" value={agent.description} onChange={e => updateAgent({ description: e.target.value })} />
+          </div>
+        </CardContent>
+      </Card>
+      
+      <Card>
+        <CardHeader>
+            <div className="flex items-center justify-between">
+                <div>
+                    <CardTitle className="font-headline">Conversational Flow</CardTitle>
+                    <CardDescription className="flex items-center gap-1.5">
+                        <Info className="h-4 w-4" />
+                        Assistant's Instructions
+                    </CardDescription>
+                </div>
+                <div className="flex items-center gap-4">
+                     <div className="flex items-center space-x-2">
+                        <Switch id="dynamic-mode" />
+                        <Label htmlFor="dynamic-mode">Dynamic</Label>
+                    </div>
+                    <Button variant="outline" onClick={addStep}><Plus className="h-4 w-4 mr-2" />Add Step</Button>
+                </div>
+            </div>
+        </CardHeader>
+        <CardContent>
+            <DragDropContext onDragEnd={onDragEnd}>
+                <Droppable droppableId="conversationFlow">
+                    {(provided) => (
+                        <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
+                            <Accordion type="multiple" className="w-full">
+                                {conversationFlow.map((step, index) => (
+                                    <Draggable key={index} draggableId={`step-${index}`} index={index}>
+                                        {(provided) => (
+                                            <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}>
+                                                <AccordionItem value={`item-${index}`}>
+                                                    <AccordionTrigger className="p-3 rounded-md hover:bg-muted/50 [&[data-state=open]]:bg-muted/80">
+                                                        <div className="flex items-center gap-4 flex-1">
+                                                            <GripVertical className="h-5 w-5 text-muted-foreground" />
+                                                            <span className="font-semibold">{index + 1}. {step.title}</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-4 mr-2">
+                                                            <Switch checked={true} />
+                                                            <Button size="icon" variant="ghost" onClick={(e) => { e.stopPropagation(); removeStep(index); }} className="h-8 w-8">
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        </div>
+                                                    </AccordionTrigger>
+                                                    <AccordionContent className="p-4">
+                                                        <Textarea 
+                                                          placeholder="Enter step content or instructions..." 
+                                                          value={step.content} 
+                                                          onChange={(e) => updateStep(index, { content: e.target.value })}
+                                                          className="min-h-[120px]"
+                                                        />
+                                                    </AccordionContent>
+                                                </AccordionItem>
+                                            </div>
+                                        )}
+                                    </Draggable>
+                                ))}
+                            </Accordion>
+                            {provided.placeholder}
+                        </div>
+                    )}
+                </Droppable>
+            </DragDropContext>
+             {conversationFlow.length === 0 && (
+                <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
+                    <p>No conversation steps yet. Click "Add Step" to begin.</p>
+                </div>
+              )}
+        </CardContent>
+      </Card>
     </div>
   )
 }
@@ -616,6 +725,3 @@ function ConfigurationTab({ agent, onConfigChange }: { agent: Agent, onConfigCha
       </Card>
   )
 }
-
-    
-    
