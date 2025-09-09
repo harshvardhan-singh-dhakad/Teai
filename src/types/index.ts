@@ -71,6 +71,24 @@ type IntegrationCredentials = {
     [key: string]: any;
 };
 
+export type ExtractedVariable = {
+  id: string;
+  name: string;
+  description: string;
+};
+
+export type PostCallConfig = {
+  id: string;
+  deliveryMethod: 'webhook' | 'email' | 'crm' | 'google-sheets';
+  include: {
+    callSummary: boolean;
+    fullConversation: boolean;
+    sentimentAnalysis: boolean;
+    extractedInformation: boolean;
+  };
+  extractedVariables?: ExtractedVariable[];
+};
+
 export type Agent = {
   id: string;
   name: string;
@@ -121,9 +139,7 @@ export type Agent = {
       endCallMessage?: string;
     }
   };
-  postCall?: {
-    webhookUrl: string;
-  };
+  postCallConfigs?: PostCallConfig[];
   createdAt: string;
 };
 

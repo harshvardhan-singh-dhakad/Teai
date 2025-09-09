@@ -4,7 +4,7 @@
 
 import React, { useEffect, useState } from "react"
 import { notFound, useRouter, useParams } from 'next/navigation'
-import { ArrowLeft, HardDriveUpload, FlaskConical, UploadCloud, FileText, Trash2, Eye, Languages, Mic, BrainCircuit, PhoneForwarded, Voicemail, Bot, Smile, Info, Plus, GripVertical, Phone, Calendar, Slack, Zap, Briefcase, Play } from "lucide-react"
+import { ArrowLeft, HardDriveUpload, FlaskConical, UploadCloud, FileText, Trash2, Eye, Languages, Mic, BrainCircuit, PhoneForwarded, Voicemail, Bot, Smile, Info, Plus, GripVertical, Phone, Calendar, Slack, Zap, Briefcase, Play, BookText, MessageSquare, BarChart, FileJson } from "lucide-react"
 import { DragDropContext, Droppable, Draggable, type DropResult } from 'react-beautiful-dnd';
 
 import { Button } from "@/components/ui/button"
@@ -34,7 +34,7 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
-import type { Agent, Document, ConversationStep, Integration, Voice } from "@/types"
+import type { Agent, Document, ConversationStep, Integration, Voice, PostCallConfig, ExtractedVariable } from "@/types"
 import { useLocalStorage } from "@/hooks/use-local-storage"
 import { AssistantChatbot } from "@/components/assistant-chatbot"
 import { useToast } from "@/hooks/use-toast"
@@ -47,6 +47,7 @@ import { Switch } from "@/components/ui/switch"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Checkbox } from "@/components/ui/checkbox"
 import { cn } from "@/lib/utils"
 
 
@@ -230,20 +231,8 @@ export default function AgentEditorPage() {
              <TabsContent value="configurations" className="h-full">
                 <ConfigurationTab agent={agent} onConfigChange={updateAgentConfig} />
             </TabsContent>
-            <TabsContent value="post-call">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Post-Call Actions</CardTitle>
-                  <CardDescription>
-                    Configure what happens after a call ends. Coming soon.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="p-4 border-2 border-dashed rounded-lg min-h-[300px] flex flex-col items-center justify-center text-center bg-secondary/30">
-                       <p className="text-muted-foreground">Post-call actions will be configured here.</p>
-                    </div>
-                </CardContent>
-              </Card>
+            <TabsContent value="post-call" className="h-full">
+               <PostCallTab agent={agent} updateAgent={updateAgent} />
             </TabsContent>
              <TabsContent value="recent-calls">
               <Card>
@@ -1053,6 +1042,172 @@ function ConfigurationTab({ agent, onConfigChange }: { agent: Agent; onConfigCha
           </CardContent>
       </Card>
   )
+}
+
+function PostCallTab({ agent, updateAgent }: { agent: Agent, updateAgent: (data: Partial<Agent>) => void }) {
+  const [configs, setConfigs] = useState<PostCallConfig[]>(agent.postCallConfigs || []);
+
+  const handleUpdate = (updatedConfigs: PostCallConfig[]) => {
+    setConfigs(updatedConfigs);
+    updateAgent({ postCallConfigs: updatedConfigs });
+  };
+
+  const addConfig = () => {
+    const newConfig: PostCallConfig = {
+      id: `config-${Date.now()}`,
+      deliveryMethod: 'webhook',
+      include: {
+        callSummary: true,
+        fullConversation: false,
+        sentimentAnalysis: false,
+        extractedInformation: true,
+      },
+      extractedVariables: [],
+    };
+    handleUpdate([...configs, newConfig]);
+  };
+
+  const removeConfig = (id: string) => {
+    handleUpdate(configs.filter(c => c.id !== id));
+  };
+  
+  const updateConfig = (id: string, newConfig: Partial<PostCallConfig>) => {
+    handleUpdate(configs.map(c => c.id === id ? { ...c, ...newConfig } : c));
+  }
+  
+  const addVariable = (configId: string) => {
+    const newVariable: ExtractedVariable = {
+        id: `var-${Date.now()}`,
+        name: '',
+        description: ''
+    };
+    const config = configs.find(c => c.id === configId);
+    if(config) {
+        updateConfig(configId, { extractedVariables: [...(config.extractedVariables || []), newVariable] });
+    }
+  }
+  
+  const removeVariable = (configId: string, varId: string) => {
+      const config = configs.find(c => c.id === configId);
+      if(config) {
+        updateConfig(configId, { extractedVariables: config.extractedVariables?.filter(v => v.id !== varId) });
+      }
+  }
+  
+  const updateVariable = (configId: string, varId: string, updatedVar: Partial<ExtractedVariable>) => {
+      const config = configs.find(c => c.id === configId);
+      if(config) {
+          const updatedVars = config.extractedVariables?.map(v => v.id === varId ? {...v, ...updatedVar} : v);
+          updateConfig(configId, { extractedVariables: updatedVars });
+      }
+  }
+
+
+  return (
+    <Card className="h-full">
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle>Post-Call Delivery Settings</CardTitle>
+          <CardDescription>Configure where call data is sent after completion.</CardDescription>
+        </div>
+        <Button onClick={addConfig}><Plus className="mr-2 h-4 w-4" />Add Configuration</Button>
+      </CardHeader>
+      <CardContent>
+        <ScrollArea className="h-[calc(100vh-350px)] pr-4">
+          {configs.length === 0 ? (
+            <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg min-h-[300px] bg-secondary/30">
+              <FileJson className="h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-xl font-semibold">No Post-Call Configurations</h3>
+              <p className="text-muted-foreground mt-2">Click 'Add Configuration' to set up data delivery.</p>
+            </div>
+          ) : (
+            <Accordion type="multiple" defaultValue={configs.map(c => c.id)} className="w-full space-y-4">
+              {configs.map((config, index) => (
+                <AccordionItem key={config.id} value={config.id} className="border rounded-lg">
+                  <AccordionTrigger className="text-base font-semibold px-4 py-3 hover:no-underline">
+                    <div className="flex items-center justify-between w-full">
+                       <span>Configuration #{index + 1}</span>
+                       <Button size="icon" variant="ghost" onClick={() => removeConfig(config.id)} className="h-8 w-8">
+                         <Trash2 className="h-4 w-4" />
+                       </Button>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="p-4 pt-0 space-y-6">
+                    <div className="space-y-2">
+                       <Label>Delivery Method</Label>
+                       <Select 
+                         value={config.deliveryMethod}
+                         onValueChange={(value) => updateConfig(config.id, { deliveryMethod: value as any })}
+                       >
+                         <SelectTrigger><SelectValue /></SelectTrigger>
+                         <SelectContent>
+                           <SelectItem value="webhook">Webhook</SelectItem>
+                           <SelectItem value="email">Email</SelectItem>
+                           <SelectItem value="crm">CRM Integration</SelectItem>
+                           <SelectItem value="google-sheets">Google Sheets</SelectItem>
+                         </SelectContent>
+                       </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label>Data to Include</Label>
+                        <div className="grid grid-cols-2 gap-4 pt-2">
+                           <div className="flex items-center space-x-2">
+                             <Checkbox id={`summary-${config.id}`} checked={config.include.callSummary} onCheckedChange={(checked) => updateConfig(config.id, { include: {...config.include, callSummary: !!checked} })} />
+                             <Label htmlFor={`summary-${config.id}`} className="flex items-center gap-2"><BookText className="h-4 w-4"/> Call Summary</Label>
+                           </div>
+                           <div className="flex items-center space-x-2">
+                             <Checkbox id={`convo-${config.id}`} checked={config.include.fullConversation} onCheckedChange={(checked) => updateConfig(config.id, { include: {...config.include, fullConversation: !!checked} })}/>
+                             <Label htmlFor={`convo-${config.id}`} className="flex items-center gap-2"><MessageSquare className="h-4 w-4"/> Full Conversation</Label>
+                           </div>
+                           <div className="flex items-center space-x-2">
+                             <Checkbox id={`sentiment-${config.id}`} checked={config.include.sentimentAnalysis} onCheckedChange={(checked) => updateConfig(config.id, { include: {...config.include, sentimentAnalysis: !!checked} })}/>
+                             <Label htmlFor={`sentiment-${config.id}`} className="flex items-center gap-2"><BarChart className="h-4 w-4"/> Sentiment Analysis</Label>
+                           </div>
+                           <div className="flex items-center space-x-2">
+                             <Checkbox id={`info-${config.id}`} checked={config.include.extractedInformation} onCheckedChange={(checked) => updateConfig(config.id, { include: {...config.include, extractedInformation: !!checked} })}/>
+                             <Label htmlFor={`info-${config.id}`} className="flex items-center gap-2"><FileJson className="h-4 w-4"/> Extracted Information</Label>
+                           </div>
+                        </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                         <div className="flex items-center justify-between">
+                            <Label>Extracted Variables</Label>
+                            <Button variant="outline" size="sm" onClick={() => addVariable(config.id)}><Plus className="mr-2 h-4 w-4"/>Add Variable</Button>
+                         </div>
+                         <div className="space-y-2 pt-2">
+                            {config.extractedVariables?.map(variable => (
+                                <div key={variable.id} className="grid grid-cols-10 gap-2 items-center">
+                                    <Input 
+                                      placeholder="Variable Name" 
+                                      className="col-span-4" 
+                                      value={variable.name}
+                                      onChange={(e) => updateVariable(config.id, variable.id, { name: e.target.value })}
+                                    />
+                                    <Input 
+                                      placeholder="Description" 
+                                      className="col-span-5"
+                                      value={variable.description}
+                                      onChange={(e) => updateVariable(config.id, variable.id, { description: e.target.value })}
+                                    />
+                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => removeVariable(config.id, variable.id)}>
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            ))}
+                         </div>
+                    </div>
+
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          )}
+        </ScrollArea>
+      </CardContent>
+    </Card>
+  );
 }
 
     
