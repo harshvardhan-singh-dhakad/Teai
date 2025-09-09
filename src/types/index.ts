@@ -1,3 +1,4 @@
+
 import {z} from 'zod';
 
 export const ConversationStepBranchSchema = z.object({
@@ -141,6 +142,7 @@ export type Agent = {
   };
   postCallConfigs?: PostCallConfig[];
   createdAt: string;
+  lastEdited: string;
 };
 
 export type AgentTemplate = {
@@ -173,3 +175,5 @@ export type Voice = {
     quality: 'High' | 'Very High';
     engine: string;
 }
+
+    
