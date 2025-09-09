@@ -4,8 +4,6 @@
 import React, { useEffect, useState } from "react"
 import { notFound, useRouter, useParams } from 'next/navigation'
 import { ArrowLeft, HardDriveUpload, FlaskConical, Webhook, UploadCloud, FileText, Trash2, Eye, Languages, Mic, BrainCircuit, PhoneForwarded, Voicemail, Bot, Smile, Info, Plus, GripVertical } from "lucide-react"
-import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
-
 
 import { Button } from "@/components/ui/button"
 import {
@@ -240,14 +238,6 @@ export default function AgentEditorPage() {
 function DetailsTab({ agent, updateAgent }: { agent: Agent; updateAgent: (data: Partial<Agent>) => void; }) {
   
   const conversationFlow = Array.isArray(agent.conversationFlow) ? agent.conversationFlow : [];
-
-  const onDragEnd = (result: DropResult) => {
-    if (!result.destination) return;
-    const items = Array.from(conversationFlow);
-    const [reorderedItem] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, reorderedItem);
-    updateAgent({ conversationFlow: items });
-  };
   
   const addStep = () => {
     const newStep: ConversationStep = {
@@ -311,47 +301,36 @@ function DetailsTab({ agent, updateAgent }: { agent: Agent; updateAgent: (data: 
             </div>
         </CardHeader>
         <CardContent>
-            <DragDropContext onDragEnd={onDragEnd}>
-                <Droppable droppableId="conversationFlow">
-                    {(provided) => (
-                        <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
-                            <Accordion type="multiple" className="w-full">
-                                {conversationFlow.map((step, index) => (
-                                    <Draggable key={index} draggableId={`step-${index}`} index={index}>
-                                        {(provided) => (
-                                            <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}>
-                                                <AccordionItem value={`item-${index}`}>
-                                                    <AccordionTrigger className="p-3 rounded-md hover:bg-muted/50 [&[data-state=open]]:bg-muted/80">
-                                                        <div className="flex items-center gap-4 flex-1">
-                                                            <GripVertical className="h-5 w-5 text-muted-foreground" />
-                                                            <span className="font-semibold">{index + 1}. {step.title}</span>
-                                                        </div>
-                                                        <div className="flex items-center gap-4 mr-2">
-                                                            <Switch checked={true} />
-                                                            <Button size="icon" variant="ghost" onClick={(e) => { e.stopPropagation(); removeStep(index); }} className="h-8 w-8">
-                                                                <Trash2 className="h-4 w-4" />
-                                                            </Button>
-                                                        </div>
-                                                    </AccordionTrigger>
-                                                    <AccordionContent className="p-4">
-                                                        <Textarea 
-                                                          placeholder="Enter step content or instructions..." 
-                                                          value={step.content} 
-                                                          onChange={(e) => updateStep(index, { content: e.target.value })}
-                                                          className="min-h-[120px]"
-                                                        />
-                                                    </AccordionContent>
-                                                </AccordionItem>
-                                            </div>
-                                        )}
-                                    </Draggable>
-                                ))}
-                            </Accordion>
-                            {provided.placeholder}
+            <div className="space-y-2">
+                <Accordion type="multiple" className="w-full">
+                    {conversationFlow.map((step, index) => (
+                        <div key={index}>
+                            <AccordionItem value={`item-${index}`}>
+                                <AccordionTrigger className="p-3 rounded-md hover:bg-muted/50 [&[data-state=open]]:bg-muted/80">
+                                    <div className="flex items-center gap-4 flex-1">
+                                        <GripVertical className="h-5 w-5 text-muted-foreground" />
+                                        <span className="font-semibold">{index + 1}. {step.title}</span>
+                                    </div>
+                                    <div className="flex items-center gap-4 mr-2">
+                                        <Switch checked={true} />
+                                        <Button size="icon" variant="ghost" onClick={(e) => { e.stopPropagation(); removeStep(index); }} className="h-8 w-8">
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </AccordionTrigger>
+                                <AccordionContent className="p-4">
+                                    <Textarea 
+                                      placeholder="Enter step content or instructions..." 
+                                      value={step.content} 
+                                      onChange={(e) => updateStep(index, { content: e.target.value })}
+                                      className="min-h-[120px]"
+                                    />
+                                </AccordionContent>
+                            </AccordionItem>
                         </div>
-                    )}
-                </Droppable>
-            </DragDropContext>
+                    ))}
+                </Accordion>
+            </div>
              {conversationFlow.length === 0 && (
                 <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
                     <p>No conversation steps yet. Click "Add Step" to begin.</p>
