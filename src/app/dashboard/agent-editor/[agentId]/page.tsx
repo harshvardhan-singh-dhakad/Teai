@@ -825,7 +825,12 @@ function ConfigurationTab({ agent, onConfigChange }: { agent: Agent; onConfigCha
                                                   <SelectContent>
                                                       <SelectItem value="en-US">English (US)</SelectItem>
                                                       <SelectItem value="hi-IN">Hindi</SelectItem>
-                                                      <SelectItem value="es-ES">Spanish</SelectItem>
+                                                      <SelectItem value="gu-IN">Gujarati</SelectItem>
+                                                      <SelectItem value="mr-IN">Marathi</SelectItem>
+                                                      <SelectItem value="pa-IN">Punjabi</SelectItem>
+                                                      <SelectItem value="bn-IN">Bengali</SelectItem>
+                                                      <SelectItem value="ta-IN">Tamil</SelectItem>
+                                                      <SelectItem value="te-IN">Telugu</SelectItem>
                                                   </SelectContent>
                                               </Select>
                                           </div>
@@ -1242,3 +1247,4 @@ function PostCallTab({ agent, updateAgent }: { agent: Agent, updateAgent: (data:
     </Card>
   );
 }
+
