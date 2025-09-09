@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import React, { useEffect, useState, useRef, useTransition } from "react"
@@ -336,20 +337,22 @@ function DetailsTab({ agent, updateAgent }: { agent: Agent; updateAgent: (data: 
                                      <Draggable key={step.id} draggableId={step.id} index={index}>
                                         {(provided) => (
                                             <div ref={provided.innerRef} {...provided.draggableProps} >
-                                                <AccordionItem value={`item-${index}`} className="relative group border rounded-md px-3">
-                                                    <AccordionTrigger className="flex-1 p-0 hover:no-underline">
-                                                        <div className="flex items-center gap-4 flex-1" {...provided.dragHandleProps}>
-                                                            <GripVertical className="h-5 w-5 text-muted-foreground" />
-                                                            <span className="font-semibold">{index + 1}. {step.title}</span>
+                                                <AccordionItem value={`item-${index}`} className="group border rounded-md px-3">
+                                                    <div className="flex items-center justify-between w-full p-0">
+                                                        <AccordionTrigger className="flex-1 p-0 hover:no-underline py-3">
+                                                            <div className="flex items-center gap-4 flex-1" {...provided.dragHandleProps}>
+                                                                <GripVertical className="h-5 w-5 text-muted-foreground" />
+                                                                <span className="font-semibold truncate" title={step.title}>{index + 1}. {step.title}</span>
+                                                            </div>
+                                                        </AccordionTrigger>
+                                                        <div className="flex items-center gap-2 pl-4">
+                                                            <Switch checked={true} />
+                                                            <Button size="icon" variant="ghost" onClick={() => removeStep(index)} className="h-8 w-8">
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
                                                         </div>
-                                                    </AccordionTrigger>
-                                                    <div className="absolute right-3 top-3 flex items-center gap-4 ml-4">
-                                                        <Switch checked={true} />
-                                                        <Button size="icon" variant="ghost" onClick={() => removeStep(index)} className="h-8 w-8">
-                                                            <Trash2 className="h-4 w-4" />
-                                                        </Button>
                                                     </div>
-                                                    <AccordionContent className="p-4 pt-0">
+                                                    <AccordionContent className="p-4 pt-0 pl-12">
                                                         <Textarea 
                                                           placeholder="Enter step content or instructions..." 
                                                           value={step.content} 
@@ -1470,3 +1473,4 @@ function PhoneCallTab({ agent }: { agent: Agent }) {
         </Card>
     )
 }
+
