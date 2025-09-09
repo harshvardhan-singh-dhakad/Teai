@@ -92,26 +92,33 @@ export type Agent = {
       provider?: string;
       language?: string;
       silenceTimeout?: number;
+      interruptionSensitivity?: number;
+      enableNoiseReducer?: boolean;
     };
     llm?: {
-      model?: string;
+      provider?: string;
       temperature?: number;
+      enableStreaming?: boolean;
     };
     voice?: {
       voiceId?: string;
-      speed?: number;
     };
     behavior?: {
-      useFillerWords?: boolean;
+      enableFillerPhrases?: boolean;
+      fillerPhrases?: string[];
+      toneOfVoice?: string;
+      assistantStyle?: string;
     },
     callTransfer?: {
       enabled?: boolean;
       phoneNumber?: string;
       condition?: string;
+      transferMessage?: string;
     };
     callEnding?: {
-      enableVoicemail?: boolean;
-      voicemailMessage?: string;
+      enableAutoEnding?: boolean;
+      endCallCondition?: string;
+      endCallMessage?: string;
     }
   };
   postCall?: {
@@ -140,3 +147,13 @@ export type Integration = {
   group: 'calling' | 'other';
   credentials?: { id: string; label: string }[];
 };
+
+export type Voice = {
+    id: string;
+    name: string;
+    gender: 'Male' | 'Female';
+    accent: string;
+    provider: 'Google' | 'Eleven Labs';
+    quality: 'High' | 'Very High';
+    engine: string;
+}
