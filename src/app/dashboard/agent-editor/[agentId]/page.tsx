@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react"
 import { notFound, useRouter, useParams } from 'next/navigation'
-import { ArrowLeft, HardDriveUpload, FlaskConical, Webhook, UploadCloud, FileText, Trash2, Eye, Languages, Mic, BrainCircuit, PhoneForwarded, Voicemail, Bot, VenetianSofa } from "lucide-react"
+import { ArrowLeft, HardDriveUpload, FlaskConical, Webhook, UploadCloud, FileText, Trash2, Eye, Languages, Mic, BrainCircuit, PhoneForwarded, Voicemail, Bot, Smile } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -549,7 +549,7 @@ function ConfigurationTab({ agent, onConfigChange }: { agent: Agent, onConfigCha
                        <AccordionItem value="behavior">
                           <AccordionTrigger className="text-base font-semibold">
                             <div className="flex items-center gap-3">
-                               <VenetianSofa className="h-5 w-5 text-primary" /> Behavior
+                               <Smile className="h-5 w-5 text-primary" /> Behavior
                             </div>
                           </AccordionTrigger>
                           <AccordionContent className="pt-4 space-y-4">
@@ -616,3 +616,6 @@ function ConfigurationTab({ agent, onConfigChange }: { agent: Agent, onConfigCha
       </Card>
   )
 }
+
+    
+    
