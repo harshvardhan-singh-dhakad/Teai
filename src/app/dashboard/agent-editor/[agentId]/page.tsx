@@ -1,5 +1,4 @@
 
-
 "use client"
 
 import React, { useEffect, useState } from "react"
@@ -1124,14 +1123,14 @@ function PostCallTab({ agent, updateAgent }: { agent: Agent, updateAgent: (data:
             <Accordion type="multiple" defaultValue={configs.map(c => c.id)} className="w-full space-y-4">
               {configs.map((config, index) => (
                 <AccordionItem key={config.id} value={config.id} className="border rounded-lg">
-                  <AccordionTrigger className="text-base font-semibold px-4 py-3 hover:no-underline">
-                    <div className="flex items-center justify-between w-full">
+                  <div className="flex items-center justify-between px-4 py-3 hover:bg-muted/50 rounded-t-lg">
+                    <AccordionTrigger className="text-base font-semibold hover:no-underline flex-1">
                        <span>Configuration #{index + 1}</span>
-                       <Button size="icon" variant="ghost" onClick={() => removeConfig(config.id)} className="h-8 w-8">
-                         <Trash2 className="h-4 w-4" />
-                       </Button>
-                    </div>
-                  </AccordionTrigger>
+                    </AccordionTrigger>
+                    <Button size="icon" variant="ghost" onClick={() => removeConfig(config.id)} className="h-8 w-8">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                   <AccordionContent className="p-4 pt-0 space-y-6">
                     <div className="space-y-2">
                        <Label>Delivery Method</Label>
@@ -1209,5 +1208,7 @@ function PostCallTab({ agent, updateAgent }: { agent: Agent, updateAgent: (data:
     </Card>
   );
 }
+
+    
 
     
