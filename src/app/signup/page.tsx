@@ -61,7 +61,7 @@ export default function SignupForm() {
                     GitHub
                 </Button>
                 <Button variant="outline">
-                    <svg className="mr-2 h-4 w-4" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.05 1.05-2.86 2.25-4.82 2.25-3.44 0-6.5-2.85-6.5-6.5s2.86-6.5 6.5-6.5c1.95 0 3.35.75 4.3 1.65l2.75-2.75C19.43 1.82 16.47 0 12.48 0 5.88 0 0 5.88 0 12.5s5.88 12.5 12.48 12.5c7.25 0 12.13-4.88 12.13-12.25 0-.8-.13-1.48-.32-2.13H12.48z" fill="currentColor"/></svg>
+                    <Icons.google className="mr-2 h-4 w-4" />
                     Google
                 </Button>
             </div>
