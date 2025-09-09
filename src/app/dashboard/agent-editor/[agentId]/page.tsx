@@ -3,7 +3,7 @@
 
 import React, { useEffect, useState } from "react"
 import { notFound, useRouter, useParams } from 'next/navigation'
-import { ArrowLeft, HardDriveUpload, FlaskConical, UploadCloud, FileText, Trash2, Eye, Languages, Mic, BrainCircuit, PhoneForwarded, Voicemail, Bot, Smile, Info, Plus, GripVertical, Phone, Calendar, Slack, Zap, Briefcase, Play, BookText, MessageSquare, BarChart, FileJson } from "lucide-react"
+import { ArrowLeft, HardDriveUpload, FlaskConical, UploadCloud, FileText, Trash2, Eye, Languages, Mic, BrainCircuit, PhoneForwarded, Voicemail, Bot, Smile, Info, Plus, GripVertical, Phone, Calendar, Slack, Zap, Briefcase, Play, BookText, MessageSquare, BarChart, FileJson, Globe, Database } from "lucide-react"
 import { DragDropContext, Droppable, Draggable, type DropResult } from 'react-beautiful-dnd';
 
 import { Button } from "@/components/ui/button"
@@ -63,7 +63,7 @@ const StrictModeDroppable = ({ children, ...props }: any) => {
   if (!enabled) {
     return null;
   }
-  return <Droppable {...props}>{children}</Droppable>;
+  return <Droppable {...props} isDropDisabled={false}>{children}</Droppable>;
 };
 
 
@@ -211,6 +211,7 @@ export default function AgentEditorPage() {
         <Tabs defaultValue="details" className="flex-1 flex flex-col">
           <TabsList>
             <TabsTrigger value="details">Details</TabsTrigger>
+            <TabsTrigger value="knowledge-base">Knowledge Base</TabsTrigger>
             <TabsTrigger value="integrations">Integrations</TabsTrigger>
             <TabsTrigger value="configurations">Configurations</TabsTrigger>
             <TabsTrigger value="post-call">Post-Call</TabsTrigger>
@@ -219,6 +220,9 @@ export default function AgentEditorPage() {
           <div className="mt-4 flex-1">
             <TabsContent value="details" className="h-full">
                 <DetailsTab agent={agent} updateAgent={updateAgent} />
+            </TabsContent>
+            <TabsContent value="knowledge-base" className="h-full">
+                <KnowledgeBaseTab agent={agent} updateAgent={updateAgent} />
             </TabsContent>
             <TabsContent value="integrations" className="h-full">
                 <IntegrationsTab agent={agent} onIntegrationChange={updateAgentIntegration} />
@@ -382,6 +386,82 @@ function DetailsTab({ agent, updateAgent }: { agent: Agent; updateAgent: (data: 
     </div>
   )
 }
+
+function KnowledgeBaseTab({ agent, updateAgent }: { agent: Agent; updateAgent: (data: Partial<Agent>) => void; }) {
+  // For prototype, we'll use a mock list of all documents.
+  // In a real app, this would be fetched from a central store/DB.
+  const allDocuments: Document[] = [
+    { id: 'doc1', name: 'Product_Features.pdf', type: 'file', source: 'Product_Features.pdf', size: '2.1 MB', status: 'Active', createdAt: new Date().toISOString() },
+    { id: 'doc2', name: 'Pricing Plans', type: 'website', source: 'https://example.com/pricing', size: 'N/A', status: 'Active', createdAt: new Date().toISOString() },
+    { id: 'doc3', name: 'Company FAQ', type: 'website', source: 'https://example.com/faq', size: 'N/A', status: 'Active', createdAt: new Date().toISOString() },
+  ];
+
+  const agentKnowledgeIds = new Set(agent.knowledgeBase?.map(doc => doc.id) || []);
+
+  const handleToggleDocument = (doc: Document, isSelected: boolean) => {
+    let updatedKnowledgeBase;
+    if (isSelected) {
+      updatedKnowledgeBase = [...(agent.knowledgeBase || []), doc];
+    } else {
+      updatedKnowledgeBase = (agent.knowledgeBase || []).filter(d => d.id !== doc.id);
+    }
+    updateAgent({ knowledgeBase: updatedKnowledgeBase });
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Knowledge Base</CardTitle>
+        <CardDescription>
+          Select the knowledge sources you want this agent to use.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          {allDocuments.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[50px]">Active</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Source</TableHead>
+                  <TableHead>Size</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {allDocuments.map((doc) => (
+                  <TableRow key={doc.id}>
+                    <TableCell>
+                      <Checkbox
+                        checked={agentKnowledgeIds.has(doc.id)}
+                        onCheckedChange={(checked) => handleToggleDocument(doc, !!checked)}
+                      />
+                    </TableCell>
+                    <TableCell className="font-medium flex items-center gap-2">
+                       {doc.type === 'file' ? <FileText className="h-4 w-4 text-muted-foreground" /> : <Globe className="h-4 w-4 text-muted-foreground" />}
+                       {doc.name}
+                    </TableCell>
+                    <TableCell>{doc.type === 'file' ? 'File' : 'Website'}</TableCell>
+                    <TableCell>{doc.size}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg min-h-[200px] bg-secondary/30">
+              <Database className="h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-xl font-semibold">No Knowledge Sources Found</h3>
+              <p className="text-muted-foreground mt-2">
+                Go to the main <a href="/dashboard/knowledge-base" className="text-primary underline">Knowledge Base</a> page to add documents or websites.
+              </p>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 
 function IntegrationsTab({ agent, onIntegrationChange }: { agent: Agent, onIntegrationChange: (id: keyof NonNullable<Agent['integrations']>, connected: boolean, creds?: any) => void }) {
   const { toast } = useToast()
