@@ -2,7 +2,7 @@
 
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, Fragment } from "react"
 import { notFound, useRouter, useParams } from 'next/navigation'
 import { ArrowLeft, Check, Copy, ExternalLink, HardDriveUpload, Settings, Share, Webhook, PlusCircle, MessageSquare, Mic, GitBranch, FlaskConical } from "lucide-react"
 
@@ -257,12 +257,12 @@ export default function AgentEditorPage() {
                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center flex-col space-y-4 w-[90%]">
                             
                             {Array.isArray(agent.conversationFlow) && agent.conversationFlow.map((step, index) => (
-                                <>
+                                <Fragment key={index}>
                                     {renderNode(step, index)}
                                     {index < agent.conversationFlow.length - 1 && (
                                         <div className="h-10 w-px bg-border"/>
                                     )}
-                                </>
+                                </Fragment>
                             ))}
                            
                            <Button variant="outline" size="sm" className="shadow-md mt-4">
@@ -429,5 +429,7 @@ export default function AgentEditorPage() {
     </div>
   )
 }
+
+    
 
     
