@@ -11,6 +11,7 @@ export const ConversationStepBranchSchema = z.object({
 });
 
 export const ConversationStepSchema = z.object({
+  id: z.string().describe('A unique identifier for the step.'),
   type: z
     .enum(['aiMessage', 'userListen', 'condition'])
     .describe('The type of conversation step.'),
@@ -69,7 +70,7 @@ export type Agent = {
   id: string;
   name: string;
   description: string;
-  conversationFlow: ConversationStep[] | string;
+  conversationFlow: ConversationStep[];
   status: 'draft' | 'published';
   avatar?: string;
   knowledgeBase?: Document[];

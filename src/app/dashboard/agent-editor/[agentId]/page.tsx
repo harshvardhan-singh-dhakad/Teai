@@ -4,6 +4,7 @@
 import React, { useEffect, useState } from "react"
 import { notFound, useRouter, useParams } from 'next/navigation'
 import { ArrowLeft, HardDriveUpload, FlaskConical, Webhook, UploadCloud, FileText, Trash2, Eye, Languages, Mic, BrainCircuit, PhoneForwarded, Voicemail, Bot, Smile, Info, Plus, GripVertical } from "lucide-react"
+import { DragDropContext, Droppable, Draggable, type DropResult } from 'react-beautiful-dnd';
 
 import { Button } from "@/components/ui/button"
 import {
@@ -43,6 +44,23 @@ import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
 import { ScrollArea } from "@/components/ui/scroll-area"
 
+// Helper component to avoid "can't find node" error with react-beautiful-dnd in React 18 strict mode
+const StrictModeDroppable = ({ children, ...props }: any) => {
+  const [enabled, setEnabled] = useState(false);
+  useEffect(() => {
+    const animation = requestAnimationFrame(() => setEnabled(true));
+    return () => {
+      cancelAnimationFrame(animation);
+      setEnabled(false);
+    };
+  }, []);
+  if (!enabled) {
+    return null;
+  }
+  return <Droppable {...props}>{children}</Droppable>;
+};
+
+
 export default function AgentEditorPage() {
   const router = useRouter()
   const params = useParams()
@@ -55,9 +73,15 @@ export default function AgentEditorPage() {
     if (agentId && agents.length > 0) {
       const currentAgent = agents.find(a => a.id === agentId)
       if (currentAgent) {
-        // Ensure conversationFlow is an array
+        // Ensure conversationFlow is an array and has unique ids
         if (typeof currentAgent.conversationFlow === 'string' || !currentAgent.conversationFlow) {
             currentAgent.conversationFlow = [];
+        }
+        if (Array.isArray(currentAgent.conversationFlow)) {
+            currentAgent.conversationFlow = currentAgent.conversationFlow.map((step, index) => ({
+                ...step,
+                id: step.id || `${Date.now()}-${index}`
+            }));
         }
         setAgent(currentAgent)
       } else {
@@ -75,13 +99,13 @@ export default function AgentEditorPage() {
     );
   }
   
-  const updateAgentConfig = (configSection: keyof Agent['configurations'], key: string, value: any) => {
+  const updateAgentConfig = (configSection: keyof NonNullable<Agent['configurations']>, key: string, value: any) => {
     if (!agent) return;
     const updatedConfig = {
-      ...agent.configurations,
+      ...(agent.configurations || {}),
       [configSection]: {
         // @ts-ignore
-        ...agent.configurations?.[configSection],
+        ...(agent.configurations?.[configSection] || {}),
         [key]: value,
       },
     };
@@ -237,10 +261,22 @@ export default function AgentEditorPage() {
 
 function DetailsTab({ agent, updateAgent }: { agent: Agent; updateAgent: (data: Partial<Agent>) => void; }) {
   
-  const conversationFlow = Array.isArray(agent.conversationFlow) ? agent.conversationFlow : [];
+  const conversationFlow = (Array.isArray(agent.conversationFlow) ? agent.conversationFlow : []).map((step, index) => ({
+    ...step,
+    id: step.id || `${Date.now()}-${index}`,
+  }));
+
+  const onDragEnd = (result: DropResult) => {
+    if (!result.destination) return;
+    const items = Array.from(conversationFlow);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+    updateAgent({ conversationFlow: items });
+  };
   
   const addStep = () => {
     const newStep: ConversationStep = {
+        id: `step-${Date.now()}`,
         type: 'aiMessage',
         title: `New Step ${conversationFlow.length + 1}`,
         content: ''
@@ -302,34 +338,47 @@ function DetailsTab({ agent, updateAgent }: { agent: Agent; updateAgent: (data: 
         </CardHeader>
         <CardContent>
             <div className="space-y-2">
-                <Accordion type="multiple" className="w-full">
-                    {conversationFlow.map((step, index) => (
-                        <div key={index}>
-                            <AccordionItem value={`item-${index}`}>
-                                <AccordionTrigger className="p-3 rounded-md hover:bg-muted/50 [&[data-state=open]]:bg-muted/80">
-                                    <div className="flex items-center gap-4 flex-1">
-                                        <GripVertical className="h-5 w-5 text-muted-foreground" />
-                                        <span className="font-semibold">{index + 1}. {step.title}</span>
-                                    </div>
-                                    <div className="flex items-center gap-4 mr-2">
-                                        <Switch checked={true} />
-                                        <Button size="icon" variant="ghost" onClick={(e) => { e.stopPropagation(); removeStep(index); }} className="h-8 w-8">
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                </AccordionTrigger>
-                                <AccordionContent className="p-4">
-                                    <Textarea 
-                                      placeholder="Enter step content or instructions..." 
-                                      value={step.content} 
-                                      onChange={(e) => updateStep(index, { content: e.target.value })}
-                                      className="min-h-[120px]"
-                                    />
-                                </AccordionContent>
-                            </AccordionItem>
-                        </div>
-                    ))}
-                </Accordion>
+                <DragDropContext onDragEnd={onDragEnd}>
+                    <StrictModeDroppable droppableId="conversation-flow">
+                        {(provided) => (
+                             <Accordion type="multiple" className="w-full" {...provided.droppableProps} ref={provided.innerRef}>
+                                {conversationFlow.map((step, index) => (
+                                     <Draggable key={step.id} draggableId={step.id} index={index}>
+                                        {(provided) => (
+                                            <div ref={provided.innerRef} {...provided.draggableProps} >
+                                                <AccordionItem value={`item-${index}`} className="relative group">
+                                                     <div className="flex items-center justify-between p-3 rounded-md hover:bg-muted/50 [&[data-state=open]]:bg-muted/80">
+                                                        <AccordionTrigger className="flex-1 p-0">
+                                                             <div className="flex items-center gap-4 flex-1" {...provided.dragHandleProps}>
+                                                                <GripVertical className="h-5 w-5 text-muted-foreground" />
+                                                                <span className="font-semibold">{index + 1}. {step.title}</span>
+                                                            </div>
+                                                        </AccordionTrigger>
+                                                        <div className="flex items-center gap-4 ml-4">
+                                                            <Switch checked={true} />
+                                                            <Button size="icon" variant="ghost" onClick={() => removeStep(index)} className="h-8 w-8">
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                    <AccordionContent className="p-4 pt-0">
+                                                        <Textarea 
+                                                          placeholder="Enter step content or instructions..." 
+                                                          value={step.content} 
+                                                          onChange={(e) => updateStep(index, { content: e.target.value })}
+                                                          className="min-h-[120px]"
+                                                        />
+                                                    </AccordionContent>
+                                                </AccordionItem>
+                                            </div>
+                                        )}
+                                    </Draggable>
+                                ))}
+                                {provided.placeholder}
+                            </Accordion>
+                        )}
+                    </StrictModeDroppable>
+                </DragDropContext>
             </div>
              {conversationFlow.length === 0 && (
                 <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
@@ -534,7 +583,7 @@ function KnowledgeBaseTab({ agent, updateAgent }: { agent: Agent, updateAgent: (
   )
 }
 
-function ConfigurationTab({ agent, onConfigChange }: { agent: Agent, onConfigChange: (section: keyof Agent['configurations'], key: string, value: any) => void }) {
+function ConfigurationTab({ agent, onConfigChange }: { agent: Agent, onConfigChange: (section: keyof NonNullable<Agent['configurations']>, key: string, value: any) => void }) {
   const cfg = agent.configurations || {};
 
   return (
