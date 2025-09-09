@@ -66,6 +66,11 @@ export type Document = {
   status: "Active" | "Processing";
 };
 
+type IntegrationCredentials = {
+    connected: boolean;
+    [key: string]: any;
+};
+
 export type Agent = {
   id: string;
   name: string;
@@ -75,8 +80,12 @@ export type Agent = {
   avatar?: string;
   knowledgeBase?: Document[];
   integrations?: {
-    twilio?: {accountSid: string; authToken: string; phoneNumber: string};
-    googleCalendar?: {apiKey: string};
+    twilio?: IntegrationCredentials & { accountSid?: string; authToken?: string; };
+    vonage?: IntegrationCredentials & { apiKey?: string; apiSecret?: string; };
+    exotel?: IntegrationCredentials & { accountSid?: string; apiToken?: string; };
+    googleCalendar?: IntegrationCredentials & { apiKey?: string; };
+    slack?: IntegrationCredentials & { webhookUrl?: string; };
+    zapier?: IntegrationCredentials;
   };
   configurations?: {
     stt?: {
@@ -121,4 +130,13 @@ export type AgentTemplate = {
 export type ChatMessage = {
   role: 'user' | 'assistant';
   content: string;
+};
+
+export type Integration = {
+  id: string;
+  name: string;
+  description: string;
+  icon: React.ElementType;
+  group: 'calling' | 'other';
+  credentials?: { id: string; label: string }[];
 };

@@ -3,7 +3,7 @@
 
 import React, { useEffect, useState } from "react"
 import { notFound, useRouter, useParams } from 'next/navigation'
-import { ArrowLeft, HardDriveUpload, FlaskConical, Webhook, UploadCloud, FileText, Trash2, Eye, Languages, Mic, BrainCircuit, PhoneForwarded, Voicemail, Bot, Smile, Info, Plus, GripVertical } from "lucide-react"
+import { ArrowLeft, HardDriveUpload, FlaskConical, UploadCloud, FileText, Trash2, Eye, Languages, Mic, BrainCircuit, PhoneForwarded, Voicemail, Bot, Smile, Info, Plus, GripVertical, Phone, Calendar, Slack, Zap, Briefcase } from "lucide-react"
 import { DragDropContext, Droppable, Draggable, type DropResult } from 'react-beautiful-dnd';
 
 import { Button } from "@/components/ui/button"
@@ -13,6 +13,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -32,7 +33,7 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
-import type { Agent, Document, ConversationStep } from "@/types"
+import type { Agent, Document, ConversationStep, Integration } from "@/types"
 import { useLocalStorage } from "@/hooks/use-local-storage"
 import { AssistantChatbot } from "@/components/assistant-chatbot"
 import { useToast } from "@/hooks/use-toast"
@@ -43,6 +44,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 // Helper component to avoid "can't find node" error with react-beautiful-dnd in React 18 strict mode
 const StrictModeDroppable = ({ children, ...props }: any) => {
@@ -111,6 +113,18 @@ export default function AgentEditorPage() {
     };
     updateAgent({ configurations: updatedConfig });
   };
+  
+  const updateAgentIntegration = (integrationId: keyof NonNullable<Agent['integrations']>, isConnected: boolean, creds?: any) => {
+    if (!agent) return;
+    const updatedIntegrations = {
+      ...(agent.integrations || {}),
+      [integrationId]: {
+        ...creds,
+        connected: isConnected,
+      },
+    };
+    updateAgent({ integrations: updatedIntegrations });
+  }
 
 
   const handlePublish = () => {
@@ -206,18 +220,8 @@ export default function AgentEditorPage() {
              <TabsContent value="knowledge-base" className="h-full">
                 <KnowledgeBaseTab agent={agent} updateAgent={updateAgent} />
             </TabsContent>
-            <TabsContent value="integrations">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Integrations</CardTitle>
-                        <CardDescription>Connect your agent to external services. Coming soon.</CardDescription>
-                    </CardHeader>
-                     <CardContent>
-                        <div className="p-4 border-2 border-dashed rounded-lg min-h-[300px] flex flex-col items-center justify-center text-center bg-secondary/30">
-                           <p className="text-muted-foreground">Integration options will be available here.</p>
-                        </div>
-                    </CardContent>
-                </Card>
+            <TabsContent value="integrations" className="h-full">
+                <IntegrationsTab agent={agent} onIntegrationChange={updateAgentIntegration} />
             </TabsContent>
              <TabsContent value="configurations" className="h-full">
                 <ConfigurationTab agent={agent} onConfigChange={updateAgentConfig} />
@@ -583,6 +587,142 @@ function KnowledgeBaseTab({ agent, updateAgent }: { agent: Agent, updateAgent: (
   )
 }
 
+function IntegrationsTab({ agent, onIntegrationChange }: { agent: Agent, onIntegrationChange: (id: keyof NonNullable<Agent['integrations']>, connected: boolean, creds?: any) => void }) {
+  const { toast } = useToast()
+
+  const allIntegrations: Integration[] = [
+    { id: "twilio", name: "Twilio", description: "Connect for programmable voice and SMS.", icon: Phone, group: 'calling', credentials: [{ id: 'accountSid', label: 'Account SID' }, { id: 'authToken', label: 'Auth Token' }] },
+    { id: "vonage", name: "Vonage", description: "APIs for voice, messaging, and video.", icon: Phone, group: 'calling', credentials: [{ id: 'apiKey', label: 'API Key' }, { id: 'apiSecret', label: 'API Secret' }] },
+    { id: "exotel", name: "Exotel", description: "Cloud telephony for businesses in India.", icon: Phone, group: 'calling', credentials: [{ id: 'accountSid', label: 'Account SID' }, { id: 'apiToken', label: 'API Token' }] },
+    { id: "googleCalendar", name: "Google Calendar", description: "Automate scheduling and manage events.", icon: Calendar, group: 'other', credentials: [{id: 'apiKey', label: 'API Key'}] },
+    { id: "slack", name: "Slack", description: "Send notifications and data to channels.", icon: Slack, group: 'other', credentials: [{id: 'webhookUrl', label: 'Webhook URL'}] },
+    { id: "zapier", name: "Zapier", description: "Connect your agent to thousands of apps.", icon: Zap, group: 'other', credentials: [] },
+  ];
+
+  const handleConnect = (id: keyof NonNullable<Agent['integrations']>, newCredentials?: Record<string, string>) => {
+    onIntegrationChange(id, true, newCredentials);
+    toast({ title: `Successfully connected to ${allIntegrations.find(i=>i.id === id)?.name}!` })
+  }
+
+  const handleDisconnect = (id: keyof NonNullable<Agent['integrations']>) => {
+    onIntegrationChange(id, false, {});
+    toast({ title: `Disconnected from ${allIntegrations.find(i=>i.id === id)?.name}.`, variant: "destructive" })
+  }
+
+  const callingProviders = allIntegrations.filter(int => int.group === 'calling');
+  const otherIntegrations = allIntegrations.filter(int => int.group !== 'calling');
+  
+  return (
+    <div className="grid gap-6">
+        <Card>
+            <CardHeader>
+                <div className="flex items-center gap-2">
+                    <Briefcase className="h-5 w-5"/>
+                    <CardTitle className="text-xl font-headline">Calling Providers</CardTitle>
+                </div>
+                <CardDescription>Connect a telephony provider to enable live calls for your agents.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="divide-y divide-border">
+                    {callingProviders.map(integration => {
+                        const isConnected = agent.integrations?.[integration.id as keyof Agent['integrations']]?.connected || false;
+                        return (
+                             <div key={integration.id} className="flex items-center justify-between py-4">
+                                <div className="flex items-center gap-4">
+                                    <integration.icon className="h-8 w-8 text-muted-foreground" />
+                                    <div>
+                                        <h3 className="font-semibold">{integration.name}</h3>
+                                        <p className="text-sm text-muted-foreground">{integration.description}</p>
+                                    </div>
+                                </div>
+                                <IntegrationButton 
+                                  integration={integration} 
+                                  isConnected={isConnected}
+                                  onConnect={handleConnect} 
+                                  onDisconnect={handleDisconnect} />
+                            </div>
+                        )
+                    })}
+                </div>
+            </CardContent>
+        </Card>
+
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {otherIntegrations.map(integration => {
+               const isConnected = agent.integrations?.[integration.id as keyof Agent['integrations']]?.connected || false;
+                return (
+                    <Card key={integration.id}>
+                        <CardHeader>
+                            <div className="flex items-center gap-4">
+                                <integration.icon className="h-8 w-8 text-primary" />
+                                <CardTitle>{integration.name}</CardTitle>
+                            </div>
+                            <CardDescription>{integration.description}</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                           <IntegrationButton 
+                              integration={integration} 
+                              isConnected={isConnected}
+                              onConnect={handleConnect} 
+                              onDisconnect={handleDisconnect} />
+                        </CardContent>
+                    </Card>
+                )
+            })}
+        </div>
+    </div>
+  )
+}
+
+function IntegrationButton({ integration, isConnected, onConnect, onDisconnect }: { integration: Integration; isConnected: boolean; onConnect: (id: any, creds?: any) => void; onDisconnect: (id: any) => void; }) {
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [creds, setCreds] = useState<Record<string, string>>({});
+  
+  const handleSave = () => {
+    onConnect(integration.id, creds);
+    setDialogOpen(false);
+  }
+
+  if (isConnected) {
+    return <Button variant="destructive" onClick={() => onDisconnect(integration.id)}>Disconnect</Button>
+  }
+
+  if (!integration.credentials || integration.credentials.length === 0) {
+    return <Button onClick={() => onConnect(integration.id)}>Connect</Button>
+  }
+  
+  return (
+    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <DialogTrigger asChild>
+        <Button>Connect</Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Connect to {integration.name}</DialogTitle>
+          <DialogDescription>
+            Please provide your credentials to connect your account.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4 py-4">
+          {integration.credentials.map(cred => (
+            <div key={cred.id} className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor={cred.id} className="text-right">
+                {cred.label}
+              </Label>
+              <Input id={cred.id} className="col-span-3" onChange={e => setCreds(prev => ({ ...prev, [cred.id]: e.target.value }))} />
+            </div>
+          ))}
+        </div>
+        <DialogFooter>
+            <Button variant="ghost" onClick={() => setDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleSave}>Save Connection</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+
 function ConfigurationTab({ agent, onConfigChange }: { agent: Agent, onConfigChange: (section: keyof NonNullable<Agent['configurations']>, key: string, value: any) => void }) {
   const cfg = agent.configurations || {};
 
@@ -753,5 +893,3 @@ function ConfigurationTab({ agent, onConfigChange }: { agent: Agent, onConfigCha
       </Card>
   )
 }
-
-    
