@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react"
 import { notFound, useRouter, useParams } from 'next/navigation'
-import { ArrowLeft, HardDriveUpload, FlaskConical, Webhook, UploadCloud, FileText, Trash2, Eye } from "lucide-react"
+import { ArrowLeft, HardDriveUpload, FlaskConical, Webhook, UploadCloud, FileText, Trash2, Eye, Languages, Mic, BrainCircuit, PhoneForwarded, Voicemail, Bot, VenetianSofa } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -37,6 +37,11 @@ import { AssistantChatbot } from "@/components/assistant-chatbot"
 import { useToast } from "@/hooks/use-toast"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Progress } from "@/components/ui/progress"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Slider } from "@/components/ui/slider"
+import { Switch } from "@/components/ui/switch"
+import { ScrollArea } from "@/components/ui/scroll-area"
 
 export default function AgentEditorPage() {
   const router = useRouter()
@@ -65,6 +70,20 @@ export default function AgentEditorPage() {
       prevAgents.map(a => a.id === agent.id ? updatedAgent : a)
     );
   }
+  
+  const updateAgentConfig = (configSection: keyof Agent['configurations'], key: string, value: any) => {
+    if (!agent) return;
+    const updatedConfig = {
+      ...agent.configurations,
+      [configSection]: {
+        // @ts-ignore
+        ...agent.configurations?.[configSection],
+        [key]: value,
+      },
+    };
+    updateAgent({ configurations: updatedConfig });
+  };
+
 
   const handlePublish = () => {
     if (!agent) return
@@ -195,18 +214,8 @@ export default function AgentEditorPage() {
                     </CardContent>
                 </Card>
             </TabsContent>
-            <TabsContent value="configurations">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Configurations</CardTitle>
-                        <CardDescription>Customize the AI models, voice, and language. Coming soon.</CardDescription>
-                    </CardHeader>
-                     <CardContent>
-                        <div className="p-4 border-2 border-dashed rounded-lg min-h-[300px] flex flex-col items-center justify-center text-center bg-secondary/30">
-                           <p className="text-muted-foreground">Advanced configuration options will be available here.</p>
-                        </div>
-                    </CardContent>
-                </Card>
+             <TabsContent value="configurations" className="h-full">
+                <ConfigurationTab agent={agent} onConfigChange={updateAgentConfig} />
             </TabsContent>
             <TabsContent value="post-call">
               <Card>
@@ -434,5 +443,176 @@ function KnowledgeBaseTab({ agent, updateAgent }: { agent: Agent, updateAgent: (
         </div>
       </CardContent>
     </Card>
+  )
+}
+
+function ConfigurationTab({ agent, onConfigChange }: { agent: Agent, onConfigChange: (section: keyof Agent['configurations'], key: string, value: any) => void }) {
+  const cfg = agent.configurations || {};
+
+  return (
+      <Card className="h-full">
+          <CardHeader>
+              <CardTitle>Configurations</CardTitle>
+              <CardDescription>
+                  Fine-tune the technical aspects of your AI agent.
+              </CardDescription>
+          </CardHeader>
+          <CardContent>
+              <ScrollArea className="h-[calc(100vh-300px)] pr-4">
+                  <Accordion type="multiple" defaultValue={['models', 'voice', 'behavior']} className="w-full">
+                      
+                      <AccordionItem value="models">
+                          <AccordionTrigger className="text-base font-semibold">
+                            <div className="flex items-center gap-3">
+                              <BrainCircuit className="h-5 w-5 text-primary" /> Models
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent className="pt-4 space-y-6">
+                              <div className="p-4 border rounded-lg space-y-4">
+                                  <h4 className="font-medium flex items-center gap-2"><Mic className="h-4 w-4" /> Speech-to-Text (STT)</h4>
+                                  <div className="grid grid-cols-2 gap-4">
+                                      <div className="space-y-2">
+                                          <Label>Provider</Label>
+                                          <Select value={cfg.stt?.provider} onValueChange={v => onConfigChange('stt', 'provider', v)}>
+                                              <SelectTrigger><SelectValue placeholder="Select provider" /></SelectTrigger>
+                                              <SelectContent>
+                                                  <SelectItem value="google">Google</SelectItem>
+                                                  <SelectItem value="whisper">Whisper</SelectItem>
+                                              </SelectContent>
+                                          </Select>
+                                      </div>
+                                      <div className="space-y-2">
+                                          <Label>Language</Label>
+                                          <Select value={cfg.stt?.language} onValueChange={v => onConfigChange('stt', 'language', v)}>
+                                              <SelectTrigger><SelectValue placeholder="Select language" /></SelectTrigger>
+                                              <SelectContent>
+                                                  <SelectItem value="en-US">English (US)</SelectItem>
+                                                  <SelectItem value="hi-IN">Hindi</SelectItem>
+                                                  <SelectItem value="es-ES">Spanish</SelectItem>
+                                              </SelectContent>
+                                          </Select>
+                                      </div>
+                                  </div>
+                                   <div className="space-y-2">
+                                        <Label>Silence Timeout: {cfg.stt?.silenceTimeout || 1.0}s</Label>
+                                        <Slider defaultValue={[cfg.stt?.silenceTimeout || 1.0]} max={5} step={0.1} onValueChange={([v]) => onConfigChange('stt', 'silenceTimeout', v)} />
+                                    </div>
+                              </div>
+                              <div className="p-4 border rounded-lg space-y-4">
+                                  <h4 className="font-medium flex items-center gap-2"><Bot className="h-4 w-4" /> Language Model (LLM)</h4>
+                                  <div className="grid grid-cols-2 gap-4">
+                                      <div className="space-y-2">
+                                          <Label>Model</Label>
+                                          <Select value={cfg.llm?.model} onValueChange={v => onConfigChange('llm', 'model', v)}>
+                                              <SelectTrigger><SelectValue placeholder="Select model" /></SelectTrigger>
+                                              <SelectContent>
+                                                  <SelectItem value="gemini-2.5-flash">Gemini 2.5 Flash</SelectItem>
+                                                  <SelectItem value="gpt-4">GPT-4</SelectItem>
+                                              </SelectContent>
+                                          </Select>
+                                      </div>
+                                       <div className="space-y-2">
+                                          <Label>Temperature: {cfg.llm?.temperature || 0.7}</Label>
+                                          <Slider defaultValue={[cfg.llm?.temperature || 0.7]} max={1} step={0.1} onValueChange={([v]) => onConfigChange('llm', 'temperature', v)} />
+                                      </div>
+                                  </div>
+                              </div>
+                          </AccordionContent>
+                      </AccordionItem>
+
+                      <AccordionItem value="voice">
+                          <AccordionTrigger className="text-base font-semibold">
+                            <div className="flex items-center gap-3">
+                              <Languages className="h-5 w-5 text-primary" /> Voice
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent className="pt-4 space-y-4">
+                                <div className="space-y-2">
+                                    <Label>Voice</Label>
+                                    <Select value={cfg.voice?.voiceId} onValueChange={v => onConfigChange('voice', 'voiceId', v)}>
+                                        <SelectTrigger><SelectValue placeholder="Select a voice" /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="Algenib">Algenib (Female)</SelectItem>
+                                            <SelectItem value="Achernar">Achernar (Male)</SelectItem>
+                                             <SelectItem value="hi-IN-Standard-A">Hindi (Female)</SelectItem>
+                                            <SelectItem value="hi-IN-Standard-B">Hindi (Male)</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Speaking Rate: {cfg.voice?.speed || 1.0}x</Label>
+                                    <Slider defaultValue={[cfg.voice?.speed || 1.0]} max={2} step={0.1} onValueChange={([v]) => onConfigChange('voice', 'speed', v)} />
+                                </div>
+                          </AccordionContent>
+                      </AccordionItem>
+                      
+                       <AccordionItem value="behavior">
+                          <AccordionTrigger className="text-base font-semibold">
+                            <div className="flex items-center gap-3">
+                               <VenetianSofa className="h-5 w-5 text-primary" /> Behavior
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent className="pt-4 space-y-4">
+                               <div className="flex items-center justify-between p-4 border rounded-lg">
+                                  <div>
+                                    <Label>Filler Words</Label>
+                                    <p className="text-sm text-muted-foreground">Use filler words like 'umm' to sound more human.</p>
+                                  </div>
+                                  <Switch checked={cfg.behavior?.useFillerWords} onCheckedChange={v => onConfigChange('behavior', 'useFillerWords', v)} />
+                              </div>
+                          </AccordionContent>
+                      </AccordionItem>
+
+
+                      <AccordionItem value="call-transfer">
+                          <AccordionTrigger className="text-base font-semibold">
+                             <div className="flex items-center gap-3">
+                              <PhoneForwarded className="h-5 w-5 text-primary" /> Call Transfer
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent className="pt-4 space-y-4">
+                               <div className="flex items-center justify-between p-4 border rounded-lg">
+                                  <Label>Enable Call Transfer</Label>
+                                  <Switch checked={cfg.callTransfer?.enabled} onCheckedChange={v => onConfigChange('callTransfer', 'enabled', v)} />
+                              </div>
+                              {cfg.callTransfer?.enabled && (
+                                <div className="p-4 border rounded-lg space-y-4">
+                                    <div className="space-y-2">
+                                        <Label>Transfer Phone Number</Label>
+                                        <Input value={cfg.callTransfer?.phoneNumber} onChange={e => onConfigChange('callTransfer', 'phoneNumber', e.target.value)} placeholder="+1 (555) 123-4567" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Transfer Condition</Label>
+                                         <Textarea value={cfg.callTransfer?.condition} onChange={e => onConfigChange('callTransfer', 'condition', e.target.value)} placeholder="e.g., If user says 'speak to a human'" />
+                                    </div>
+                                </div>
+                              )}
+                          </AccordionContent>
+                      </AccordionItem>
+
+                      <AccordionItem value="call-ending">
+                          <AccordionTrigger className="text-base font-semibold">
+                             <div className="flex items-center gap-3">
+                                <Voicemail className="h-5 w-5 text-primary" /> Call Ending
+                              </div>
+                          </AccordionTrigger>
+                           <AccordionContent className="pt-4 space-y-4">
+                               <div className="flex items-center justify-between p-4 border rounded-lg">
+                                  <Label>Enable Voicemail</Label>
+                                  <Switch checked={cfg.callEnding?.enableVoicemail} onCheckedChange={v => onConfigChange('callEnding', 'enableVoicemail', v)} />
+                              </div>
+                              {cfg.callEnding?.enableVoicemail && (
+                                 <div className="p-4 border rounded-lg space-y-2">
+                                    <Label>Voicemail Message</Label>
+                                    <Textarea value={cfg.callEnding?.voicemailMessage} onChange={e => onConfigChange('callEnding', 'voicemailMessage', e.target.value)} placeholder="Please leave a message after the beep." />
+                                </div>
+                              )}
+                           </AccordionContent>
+                      </AccordionItem>
+
+                  </Accordion>
+              </ScrollArea>
+          </CardContent>
+      </Card>
   )
 }

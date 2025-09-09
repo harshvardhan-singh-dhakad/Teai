@@ -69,7 +69,7 @@ export type Agent = {
   id: string;
   name: string;
   description: string;
-  conversationFlow: ConversationStep[] | string; // Can be a structured flow or a simple string for backward compatibility
+  conversationFlow: ConversationStep[] | string;
   status: 'draft' | 'published';
   avatar?: string;
   knowledgeBase?: Document[];
@@ -78,10 +78,31 @@ export type Agent = {
     googleCalendar?: {apiKey: string};
   };
   configurations?: {
-    language?: string;
-    llmModel?: string;
-    sttModel?: string;
-    ttsModel?: string;
+    stt?: {
+      provider?: string;
+      language?: string;
+      silenceTimeout?: number;
+    };
+    llm?: {
+      model?: string;
+      temperature?: number;
+    };
+    voice?: {
+      voiceId?: string;
+      speed?: number;
+    };
+    behavior?: {
+      useFillerWords?: boolean;
+    },
+    callTransfer?: {
+      enabled?: boolean;
+      phoneNumber?: string;
+      condition?: string;
+    };
+    callEnding?: {
+      enableVoicemail?: boolean;
+      voicemailMessage?: string;
+    }
   };
   postCall?: {
     webhookUrl: string;
