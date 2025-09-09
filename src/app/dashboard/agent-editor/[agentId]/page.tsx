@@ -47,6 +47,7 @@ import { Switch } from "@/components/ui/switch"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { cn } from "@/lib/utils"
 
 
 // Helper component to avoid "can't find node" error with react-beautiful-dnd in React 18 strict mode
@@ -1053,3 +1054,5 @@ function ConfigurationTab({ agent, onConfigChange }: { agent: Agent; onConfigCha
       </Card>
   )
 }
+
+    
