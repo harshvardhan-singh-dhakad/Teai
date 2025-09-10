@@ -30,19 +30,10 @@ export default function SignupForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleEmailSignup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (password !== confirmPassword) {
-      toast({
-        title: "Passwords do not match",
-        description: "Please make sure your passwords match.",
-        variant: "destructive",
-      });
-      return;
-    }
+  const handleSignUp = async (signUpMethod: () => Promise<any>) => {
     setIsLoading(true);
     try {
-      await signUp(email, password, fullName);
+      await signUpMethod();
       toast({ title: "Sign Up Successful", description: "Redirecting to your dashboard..." });
       router.push("/dashboard");
     } catch (error: any) {
@@ -55,6 +46,12 @@ export default function SignupForm() {
           case 'auth/weak-password':
             errorMessage = 'Password should be at least 6 characters.';
             break;
+          case 'auth/popup-closed-by-user':
+             errorMessage = 'Sign up process was cancelled.';
+             break;
+           case 'auth/account-exists-with-different-credential':
+             errorMessage = 'An account already exists with the same email address but different sign-in credentials.';
+             break;
           default:
             errorMessage = error.message;
         }
@@ -63,26 +60,21 @@ export default function SignupForm() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleEmailSignup = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password !== confirmPassword) {
+      toast({
+        title: "Passwords do not match",
+        description: "Please make sure your passwords match.",
+        variant: "destructive",
+      });
+      return;
+    }
+    handleSignUp(() => signUp(email, password, fullName));
   }
 
-  const handleOAuthSignIn = async (provider: () => Promise<void>) => {
-    setIsLoading(true);
-    try {
-      await provider();
-      toast({ title: "Sign Up Successful", description: "Redirecting to your dashboard..." });
-      router.push("/dashboard");
-    } catch (error: any) {
-       let errorMessage = "An unexpected error occurred.";
-       if (error.code === 'auth/popup-closed-by-user') {
-         errorMessage = 'Sign up process was cancelled.';
-       } else if (error.message) {
-         errorMessage = error.message;
-       }
-       toast({ title: "Sign Up Failed", description: errorMessage, variant: "destructive" });
-    } finally {
-      setIsLoading(false);
-    }
-  }
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background">
@@ -177,11 +169,11 @@ export default function SignupForm() {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2 mt-4">
-                <Button variant="outline" type="button" disabled={isLoading} onClick={() => handleOAuthSignIn(signInWithGitHub)}>
+                <Button variant="outline" type="button" disabled={isLoading} onClick={() => handleSignUp(signInWithGitHub)}>
                     <Icons.github className="mr-2 h-4 w-4" />
                     GitHub
                 </Button>
-                <Button variant="outline" type="button" disabled={isLoading} onClick={() => handleOAuthSignIn(signInWithGoogle)}>
+                <Button variant="outline" type="button" disabled={isLoading} onClick={() => handleSignUp(signInWithGoogle)}>
                     <Icons.google className="mr-2 h-4 w-4" />
                     Google
                 </Button>

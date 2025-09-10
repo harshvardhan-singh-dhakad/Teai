@@ -28,14 +28,10 @@ export default function LoginForm() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    handleSignIn(async () => signIn(email, password));
+    handleSignIn(() => signIn(email, password));
   };
 
-  const handleOAuthSignIn = (provider: () => Promise<void>) => {
-    handleSignIn(provider);
-  }
-
-  const handleSignIn = async (signInMethod: () => Promise<void>) => {
+  const handleSignIn = async (signInMethod: () => Promise<any>) => {
     setIsLoading(true);
     try {
       await signInMethod();
@@ -48,11 +44,15 @@ export default function LoginForm() {
         switch (error.code) {
           case 'auth/user-not-found':
           case 'auth/wrong-password':
+          case 'auth/invalid-credential':
             errorMessage = 'Invalid credentials. Please check your email and password.';
             break;
           case 'auth/popup-closed-by-user':
             errorMessage = 'Login process was cancelled.';
             break;
+          case 'auth/account-exists-with-different-credential':
+             errorMessage = 'An account already exists with the same email address but different sign-in credentials.';
+             break;
           default:
             errorMessage = error.message;
         }
@@ -120,11 +120,11 @@ export default function LoginForm() {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2">
-                <Button variant="outline" type="button" disabled={isLoading} onClick={() => handleOAuthSignIn(signInWithGitHub)}>
+                <Button variant="outline" type="button" disabled={isLoading} onClick={() => handleSignIn(signInWithGitHub)}>
                     <Icons.github className="mr-2 h-4 w-4" />
                     GitHub
                 </Button>
-                <Button variant="outline" type="button" disabled={isLoading} onClick={() => handleOAuthSignIn(signInWithGoogle)}>
+                <Button variant="outline" type="button" disabled={isLoading} onClick={() => handleSignIn(signInWithGoogle)}>
                     <Icons.google className="mr-2 h-4 w-4" />
                     Google
                 </Button>
