@@ -16,7 +16,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Icons } from "@/components/icons"
-import { signIn } from "@/lib/auth";
+import { signIn, signInWithGoogle, signInWithGitHub } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 
 export default function LoginForm() {
@@ -28,17 +28,41 @@ export default function LoginForm() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    handleSignIn(async () => signIn(email, password));
+  };
+
+  const handleOAuthSignIn = (provider: () => Promise<void>) => {
+    handleSignIn(provider);
+  }
+
+  const handleSignIn = async (signInMethod: () => Promise<void>) => {
     setIsLoading(true);
     try {
-      await signIn(email, password);
+      await signInMethod();
       toast({ title: "Login Successful", description: "Redirecting to your dashboard..." });
       router.push("/dashboard");
     } catch (error: any) {
-      toast({ title: "Login Failed", description: error.message, variant: "destructive" });
+      // Improved error handling
+      let errorMessage = "An unexpected error occurred.";
+      if (error.code) {
+        switch (error.code) {
+          case 'auth/user-not-found':
+          case 'auth/wrong-password':
+            errorMessage = 'Invalid credentials. Please check your email and password.';
+            break;
+          case 'auth/popup-closed-by-user':
+            errorMessage = 'Login process was cancelled.';
+            break;
+          default:
+            errorMessage = error.message;
+        }
+      }
+      toast({ title: "Login Failed", description: errorMessage, variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
-  };
+  }
+
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background">
@@ -96,11 +120,11 @@ export default function LoginForm() {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2">
-                <Button variant="outline" type="button" disabled={isLoading}>
+                <Button variant="outline" type="button" disabled={isLoading} onClick={() => handleOAuthSignIn(signInWithGitHub)}>
                     <Icons.github className="mr-2 h-4 w-4" />
                     GitHub
                 </Button>
-                <Button variant="outline" type="button" disabled={isLoading}>
+                <Button variant="outline" type="button" disabled={isLoading} onClick={() => handleOAuthSignIn(signInWithGoogle)}>
                     <Icons.google className="mr-2 h-4 w-4" />
                     Google
                 </Button>
