@@ -16,22 +16,42 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Icons } from "@/components/icons"
-import { signInWithGoogle, signInWithGitHub } from "@/lib/auth"; // Assuming you will create these
+import { signInWithGoogle, signInWithGitHub, signUp } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 
 export default function SignupForm() {
   const router = useRouter();
   const { toast } = useToast();
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  // This is a placeholder for a full email/password signup flow
   const handleEmailSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast({
-        title: "Feature not implemented",
-        description: "Email/Password signup is coming soon. Please use Google or GitHub.",
-        variant: "destructive"
-    });
+    setIsLoading(true);
+    try {
+      await signUp(email, password, fullName);
+      toast({ title: "Sign Up Successful", description: "Redirecting to your dashboard..." });
+      router.push("/dashboard");
+    } catch (error: any) {
+      let errorMessage = "An unexpected error occurred.";
+      if (error.code) {
+        switch (error.code) {
+          case 'auth/email-already-in-use':
+            errorMessage = 'This email is already registered.';
+            break;
+          case 'auth/weak-password':
+            errorMessage = 'Password should be at least 6 characters.';
+            break;
+          default:
+            errorMessage = error.message;
+        }
+      }
+      toast({ title: "Sign Up Failed", description: errorMessage, variant: "destructive" });
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   const handleOAuthSignIn = async (provider: () => Promise<void>) => {
@@ -66,7 +86,14 @@ export default function SignupForm() {
           <form onSubmit={handleEmailSignup} className="grid gap-4">
             <div className="grid gap-2">
               <Label htmlFor="full-name">Full name</Label>
-              <Input id="full-name" placeholder="Teai User" required disabled={isLoading} />
+              <Input 
+                id="full-name" 
+                placeholder="Teai User" 
+                required 
+                disabled={isLoading}
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+              />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
@@ -75,15 +102,24 @@ export default function SignupForm() {
                 type="email"
                 placeholder="m@example.com"
                 required
-                 disabled={isLoading}
+                disabled={isLoading}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
               />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" disabled={isLoading} />
+              <Input 
+                id="password" 
+                type="password" 
+                required
+                disabled={isLoading} 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
-              Create an account
+              {isLoading ? "Creating account..." : "Create an account"}
             </Button>
             </form>
              <div className="relative mt-4">

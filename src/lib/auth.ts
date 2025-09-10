@@ -1,3 +1,4 @@
+
 "use client";
 
 import { 
@@ -8,9 +9,20 @@ import {
   GoogleAuthProvider,
   GithubAuthProvider,
   signInWithPopup,
+  createUserWithEmailAndPassword,
+  updateProfile,
   User
 } from "firebase/auth";
 import { auth } from "./firebase";
+
+export const signUp = async (email: string, password: string, fullName: string): Promise<void> => {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    if (userCredential.user) {
+        await updateProfile(userCredential.user, {
+            displayName: fullName,
+        });
+    }
+};
 
 export const signIn = (email: string, password: string):Promise<void> => {
   return new Promise((resolve, reject) => {
