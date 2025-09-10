@@ -4,6 +4,7 @@
 import Link from "next/link"
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 
 import { Button } from "@/components/ui/button"
 import {
@@ -25,10 +26,20 @@ export default function SignupForm() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleEmailSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (password !== confirmPassword) {
+      toast({
+        title: "Passwords do not match",
+        description: "Please make sure your passwords match.",
+        variant: "destructive",
+      });
+      return;
+    }
     setIsLoading(true);
     try {
       await signUp(email, password, fullName);
@@ -109,14 +120,47 @@ export default function SignupForm() {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="password">Password</Label>
-              <Input 
-                id="password" 
-                type="password" 
-                required
-                disabled={isLoading} 
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
+              <div className="relative">
+                <Input 
+                  id="password" 
+                  type={showPassword ? "text" : "password"}
+                  required
+                  disabled={isLoading} 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  size="icon" 
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground"
+                  onClick={() => setShowPassword(prev => !prev)}
+                >
+                  {showPassword ? <EyeOff /> : <Eye />}
+                </Button>
+              </div>
+            </div>
+             <div className="grid gap-2">
+              <Label htmlFor="confirm-password">Confirm Password</Label>
+               <div className="relative">
+                <Input 
+                  id="confirm-password" 
+                  type={showPassword ? "text" : "password"}
+                  required
+                  disabled={isLoading} 
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                />
+                 <Button 
+                  type="button" 
+                  variant="ghost" 
+                  size="icon" 
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground"
+                  onClick={() => setShowPassword(prev => !prev)}
+                >
+                  {showPassword ? <EyeOff /> : <Eye />}
+                </Button>
+              </div>
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? "Creating account..." : "Create an account"}
