@@ -94,13 +94,18 @@ export type PostCallConfig = {
   extractedVariables?: ExtractedVariable[];
 };
 
-export type Agent = {
-  id: string;
-  name: string;
-  description: string;
-  conversationFlow: ConversationStep[];
-  status: 'draft' | 'published';
-  avatar?: string;
+export const AgentSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string(),
+  conversationFlow: z.array(ConversationStepSchema),
+  status: z.enum(['draft', 'published']),
+  avatar: z.string().optional(),
+  // Omitted for simplicity in the Zod schema: knowledgeBase, integrations, configurations, postCallConfigs
+  createdAt: z.string(),
+  lastEdited: z.string(),
+});
+export type Agent = z.infer<typeof AgentSchema> & {
   knowledgeBase?: Document[];
   integrations?: {
     twilio?: IntegrationCredentials & { accountSid?: string; authToken?: string; };
@@ -145,9 +150,8 @@ export type Agent = {
     }
   };
   postCallConfigs?: PostCallConfig[];
-  createdAt: string;
-  lastEdited: string;
 };
+
 
 export type AgentTemplate = {
   name: string;
@@ -156,10 +160,11 @@ export type AgentTemplate = {
   prompt: string;
 };
 
-export type ChatMessage = {
-  role: 'user' | 'assistant';
-  content: string;
-};
+export const ChatMessageSchema = z.object({
+  role: z.enum(['user', 'assistant']),
+  content: z.string(),
+});
+export type ChatMessage = z.infer<typeof ChatMessageSchema>;
 
 export type Integration = {
   id: string;

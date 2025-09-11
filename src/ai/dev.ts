@@ -8,3 +8,4 @@ import '@/ai/flows/assistant-helper.ts';
 import '@/ai/flows/tts-flow.ts';
 import '@/ai/flows/stt-flow.ts';
 import '@/ai/flows/train-from-website.ts';
+import '@/ai/flows/run-agent-flow.ts';

@@ -49,7 +49,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Checkbox } from "@/components/ui/checkbox"
 import { cn } from "@/lib/utils"
-import { trainFromWebsiteAction, getAssistantResponse, textToSpeechAction, speechToTextAction } from "@/app/actions"
+import { trainFromWebsiteAction, getAssistantResponse, textToSpeechAction, speechToTextAction, runAgentAction } from "@/app/actions"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 
@@ -1375,20 +1375,18 @@ function ChatTab({ agent }: { agent: Agent }) {
   }, [messages])
 
   useEffect(() => {
-    if (Array.isArray(agent.conversationFlow)) {
-        const initialMessage = agent.conversationFlow.find(step => step.type === 'aiMessage');
-        if (initialMessage && initialMessage.content) {
-            setMessages([{ role: 'assistant', content: initialMessage.content }]);
-        } else {
-             setMessages([{ role: 'assistant', content: "Hello! I am ready to start the conversation." }])
+    let initialMessageContent = "Hello! I am ready to start the conversation.";
+    if (agent?.conversationFlow && agent.conversationFlow.length > 0) {
+        const firstAiMessage = agent.conversationFlow.find(step => step.type === 'aiMessage');
+        if (firstAiMessage && firstAiMessage.content) {
+            initialMessageContent = firstAiMessage.content;
         }
-    } else {
-        setMessages([{ role: 'assistant', content: "Hello! This is your selected agent. How can I help?" }])
     }
+    setMessages([{ role: 'assistant', content: initialMessageContent }]);
   }, [agent])
 
   const handleSendMessage = () => {
-    if (!input.trim()) return
+    if (!input.trim() || !agent) return
 
     const newMessages: ChatMessage[] = [...messages, { role: 'user', content: input }]
     setMessages(newMessages)
@@ -1397,7 +1395,7 @@ function ChatTab({ agent }: { agent: Agent }) {
 
     startTransition(async () => {
       try {
-        const { answer } = await getAssistantResponse({ question: currentInput });
+        const { answer } = await runAgentAction({ agent, messages: newMessages });
         setMessages(prev => [...prev, { role: 'assistant', content: answer }]);
 
         const { audio } = await textToSpeechAction({ text: answer, voice: agent.configurations?.voice?.voiceId });
@@ -1430,7 +1428,7 @@ function ChatTab({ agent }: { agent: Agent }) {
                      {messages.map((message, index) => (
                          <div key={index} className={`flex items-start gap-3 ${message.role === 'user' ? 'flex-row-reverse' : ''}`}>
                             <Avatar className="h-8 w-8">
-                                <AvatarFallback>{message.role === 'assistant' ? 'AI' : 'You'}</AvatarFallback>
+                                <AvatarFallback>{message.role === 'assistant' ? agent.name.substring(0,2).toUpperCase() : 'You'}</AvatarFallback>
                             </Avatar>
                             <div className={`rounded-lg p-3 text-sm max-w-[80%] ${message.role === 'assistant' ? 'bg-secondary' : 'bg-primary text-primary-foreground'}`}>
                                 <p>{message.content}</p>
@@ -1440,7 +1438,7 @@ function ChatTab({ agent }: { agent: Agent }) {
                      {isThinking && (
                       <div className="flex items-start gap-3">
                           <Avatar className="h-8 w-8">
-                              <AvatarFallback>AI</AvatarFallback>
+                              <AvatarFallback>{agent.name.substring(0,2).toUpperCase()}</AvatarFallback>
                           </Avatar>
                           <div className="rounded-lg p-3 text-sm bg-secondary animate-pulse">
                               Thinking...
@@ -1498,9 +1496,11 @@ function WebCallTab({ agent }: { agent: Agent }) {
                 // 1. Speech to Text
                 const { text: userText } = await speechToTextAction({ audio: base64Audio });
                 addMessageToTranscript({ role: 'user', content: userText });
+                
+                const currentTranscript = [...transcript, { role: 'user', content: userText }];
 
                 // 2. Get AI Response
-                const { answer: aiText } = await getAssistantResponse({ question: userText });
+                const { answer: aiText } = await runAgentAction({ agent, messages: currentTranscript });
                 addMessageToTranscript({ role: 'assistant', content: aiText });
                 
                 // 3. Text to Speech
@@ -1539,22 +1539,28 @@ function WebCallTab({ agent }: { agent: Agent }) {
 
                 mediaRecorderRef.current.ondataavailable = event => {
                     audioChunksRef.current.push(event.data);
+                     if (silenceTimeoutRef.current) {
+                        clearTimeout(silenceTimeoutRef.current);
+                    }
+                     silenceTimeoutRef.current = setTimeout(() => {
+                        if (mediaRecorderRef.current?.state === 'recording') {
+                            mediaRecorderRef.current.stop();
+                        }
+                    }, 1500); // Stop after 1.5s of silence
                 };
 
                 mediaRecorderRef.current.onstop = () => {
                     const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
-                    processAudio(audioBlob);
+                    if (audioBlob.size > 1000) { // Only process if there is some audio
+                      processAudio(audioBlob);
+                    } else {
+                       // If no audio, just start listening again if the call is active
+                       if(isCallActive) startListening();
+                    }
                 };
                 
                 mediaRecorderRef.current.start();
                 setIsListening(true);
-
-                // Voice Activity Detection (simple version)
-                silenceTimeoutRef.current = setTimeout(() => {
-                    if (mediaRecorderRef.current?.state === 'recording') {
-                        mediaRecorderRef.current.stop();
-                    }
-                }, 5000); // Stop after 5s of silence/recording
             })
             .catch(err => {
                 console.error("Mic access denied:", err);
@@ -1566,8 +1572,26 @@ function WebCallTab({ agent }: { agent: Agent }) {
     const handleStartCall = () => {
         setIsCallActive(true);
         setTranscript([]);
-        addMessageToTranscript({ role: 'assistant', content: "Hello, I am your agent. How can I help you today?" });
-        startListening();
+        let initialMessageContent = "Hello, I am your agent. How can I help you today?";
+        if (agent?.conversationFlow && agent.conversationFlow.length > 0) {
+            const firstAiMessage = agent.conversationFlow.find(step => step.type === 'aiMessage');
+            if (firstAiMessage && firstAiMessage.content) {
+                initialMessageContent = firstAiMessage.content;
+            }
+        }
+        addMessageToTranscript({ role: 'assistant', content: initialMessageContent });
+
+        setIsSpeaking(true);
+        textToSpeechAction({ text: initialMessageContent, voice: agent.configurations?.voice?.voiceId }).then(({audio}) => {
+            if (audioRef.current) {
+                audioRef.current.src = audio;
+                audioRef.current.play();
+                audioRef.current.onended = () => {
+                    setIsSpeaking(false);
+                    startListening();
+                };
+            }
+        });
     };
 
     const handleStopCall = () => {
@@ -1577,6 +1601,8 @@ function WebCallTab({ agent }: { agent: Agent }) {
         setIsSpeaking(false);
         if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
             mediaRecorderRef.current.stop();
+             // Clean up the stream tracks
+            mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
         }
         if (silenceTimeoutRef.current) {
             clearTimeout(silenceTimeoutRef.current);
@@ -1682,8 +1708,3 @@ function PhoneCallTab({ agent }: { agent: Agent }) {
         </Card>
     )
 }
-
-
-    
-
-    
