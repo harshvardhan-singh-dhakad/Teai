@@ -87,8 +87,8 @@ body {
     --sidebar-border: 240 3.7% 20.9%;
     --sidebar-ring: 275 50% 60%;
     --gradient-bg-dark: radial-gradient(ellipse 80% 50% at 50% -20%,rgba(120,119,198,0.3),hsla(0,0%,100%,0));
-    --stars-1: radial-gradient(1px 1px at 20px 30px, #eee, rgba(0,0,0,0)), radial-gradient(1px 1px at 40px 70px, #fff, rgba(0,0,0,0)), radial-gradient(1px 1px at 50px 160px, #ddd, rgba(0,0,0,0)), radial-gradient(1px 1px at 90px 40px, #fff, rgba(0,0,0,0)), radial-gradient(2px 2px at 130px 80px, #fff, rgba(0,0,0,0)), radial-gradient(2px 2px at 160px 120px, #ddd, rgba(0,0,0,0));
-    --stars-2: radial-gradient(1px 1px at 50px 200px, #eee, rgba(0,0,0,0)), radial-gradient(1px 1px at 110px 240px, #fff, rgba(0,0,0,0)), radial-gradient(2px 2px at 70px 320px, #ddd, rgba(0,0,0,0)), radial-gradient(1px 1px at 180px 370px, #fff, rgba(0,0,0,0)), radial-gradient(2px 2px at 220px 410px, #fff, rgba(0,0,0,0)), radial-gradient(2px 2px at 250px 350px, #ddd, rgba(0,0,0,0));
+    --stars-1: radial-gradient(2px 2px at 20px 30px, #eee, rgba(0,0,0,0)), radial-gradient(2px 2px at 40px 70px, #fff, rgba(0,0,0,0)), radial-gradient(2px 2px at 50px 160px, #ddd, rgba(0,0,0,0)), radial-gradient(2px 2px at 90px 40px, #fff, rgba(0,0,0,0)), radial-gradient(3px 3px at 130px 80px, #fff, rgba(0,0,0,0)), radial-gradient(2px 2px at 160px 120px, #ddd, rgba(0,0,0,0)), radial-gradient(2px 2px at 200px 50px, #fff, rgba(0,0,0,0)), radial-gradient(3px 3px at 240px 100px, #ddd, rgba(0,0,0,0)), radial-gradient(2px 2px at 280px 150px, #fff, rgba(0,0,0,0));
+    --stars-2: radial-gradient(2px 2px at 50px 200px, #eee, rgba(0,0,0,0)), radial-gradient(3px 3px at 110px 240px, #fff, rgba(0,0,0,0)), radial-gradient(2px 2px at 70px 320px, #ddd, rgba(0,0,0,0)), radial-gradient(2px 2px at 180px 370px, #fff, rgba(0,0,0,0)), radial-gradient(3px 3px at 220px 410px, #fff, rgba(0,0,0,0)), radial-gradient(2px 2px at 250px 350px, #ddd, rgba(0,0,0,0)), radial-gradient(3px 3px at 300px 280px, #fff, rgba(0,0,0,0)), radial-gradient(2px 2px at 350px 320px, #ddd, rgba(0,0,0,0)), radial-gradient(2px 2px at 400px 360px, #fff, rgba(0,0,0,0));
   }
 }
 
