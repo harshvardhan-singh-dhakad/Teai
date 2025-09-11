@@ -227,7 +227,7 @@ export default function AgentEditorPage() {
                 Publish
               </Button>
             )}
-            <Button disabled className="bg-green-600 hover:bg-green-700">
+            <Button className="bg-green-600 hover:bg-green-700">
                 <Check className="mr-2 h-4 w-4" />
                 Saved on {lastSavedTime}
             </Button>
