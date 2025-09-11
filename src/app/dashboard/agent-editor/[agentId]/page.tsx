@@ -187,6 +187,11 @@ export default function AgentEditorPage() {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-full">
+      {/* Right Column: AI Assistant */}
+       <div className="lg:col-span-1 flex flex-col gap-4">
+        <AssistantChatbot />
+      </div>
+
       {/* Left Column: Configuration */}
       <div className="lg:col-span-2 flex flex-col gap-4">
          <div className="flex items-center gap-4">
@@ -268,11 +273,6 @@ export default function AgentEditorPage() {
             </TabsContent>
           </div>
         </Tabs>
-      </div>
-
-       {/* Right Column: AI Assistant */}
-       <div className="lg:col-span-1 flex flex-col gap-4">
-        <AssistantChatbot />
       </div>
     </div>
   )
@@ -358,7 +358,7 @@ function DetailsTab({ agent, updateAgent }: { agent: Agent; updateAgent: (data: 
         <CardContent>
             <div className="space-y-2">
                 <DragDropContext onDragEnd={onDragEnd}>
-                    <StrictModeDroppable droppableId="conversation-flow" isDropDisabled={false}>
+                    <StrictModeDroppable droppableId="conversation-flow" isDropDisabled={false} isCombineEnabled={false}>
                         {(provided) => (
                              <Accordion type="multiple" className="w-full" {...provided.droppableProps} ref={provided.innerRef}>
                                 {conversationFlow.map((step, index) => (
@@ -1397,7 +1397,7 @@ function ChatTab({ agent }: { agent: Agent }) {
             id: agent.id,
             name: agent.name,
             description: agent.description,
-            conversationFlow: agent.conversationFlow,
+            conversationFlow: agent.conversationFlow || [],
             status: agent.status,
             avatar: agent.avatar,
             createdAt: agent.createdAt,
@@ -1719,5 +1719,3 @@ function PhoneCallTab({ agent }: { agent: Agent }) {
         </Card>
     )
 }
-
-    
