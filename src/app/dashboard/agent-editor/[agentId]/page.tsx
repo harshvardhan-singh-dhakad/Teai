@@ -183,6 +183,7 @@ export default function AgentEditorPage() {
   }
 
   const isPublished = agent.status === 'published' && !hasUnpublishedChanges;
+  const lastSavedTime = new Date(agent.lastEdited).toLocaleTimeString([], { hour: '2-digit', minute:'2-digit' });
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-full">
@@ -228,7 +229,7 @@ export default function AgentEditorPage() {
             )}
             <Button disabled className="bg-green-600 hover:bg-green-700">
                 <Check className="mr-2 h-4 w-4" />
-                All changes saved
+                Saved on {lastSavedTime}
             </Button>
         </div>
         <Tabs defaultValue="details" className="flex-1 flex flex-col">
