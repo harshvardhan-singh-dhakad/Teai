@@ -221,7 +221,7 @@ export default function AgentEditorPage() {
                     Publish
                   </Button>
                 )}
-                 <Button className="bg-green-600 hover:bg-green-700">
+                 <Button>
                     Saved on {lastSavedTime}
                 </Button>
             </div>
@@ -358,7 +358,7 @@ function DetailsTab({ agent, updateAgent }: { agent: Agent; updateAgent: (data: 
         <CardContent>
             <div className="space-y-2">
                 <DragDropContext onDragEnd={onDragEnd}>
-                    <StrictModeDroppable droppableId="conversation-flow">
+                    <StrictModeDroppable droppableId="conversation-flow" isDropDisabled={false}>
                         {(provided) => (
                              <Accordion type="multiple" className="w-full" {...provided.droppableProps} ref={provided.innerRef}>
                                 {conversationFlow.map((step, index) => (
@@ -1393,7 +1393,6 @@ function ChatTab({ agent }: { agent: Agent }) {
 
     startTransition(async () => {
       try {
-        // We only want to send the serializable parts of the agent to the server action
         const serializableAgent = {
             id: agent.id,
             name: agent.name,
@@ -1406,7 +1405,6 @@ function ChatTab({ agent }: { agent: Agent }) {
             configurations: agent.configurations,
         };
 
-        // @ts-ignore - We are intentionally sending a simplified agent object
         const { answer } = await runAgentAction({ agent: serializableAgent, messages: newMessages });
         setMessages(prev => [...prev, { role: 'assistant', content: answer }]);
 
@@ -1721,3 +1719,5 @@ function PhoneCallTab({ agent }: { agent: Agent }) {
         </Card>
     )
 }
+
+    
