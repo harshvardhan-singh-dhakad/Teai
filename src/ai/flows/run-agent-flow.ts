@@ -28,6 +28,7 @@ const prompt = ai.definePrompt({
 Your identity and instructions are defined below.
 - Name: {{{agent.name}}}
 - Description: {{{agent.description}}}
+- Language: {{#if agent.configurations.stt.language}}{{agent.configurations.stt.language}}{{else}}en-US{{/if}}
 
 Your conversation flow is structured as a series of steps. Follow these steps to guide the conversation.
 {{#each agent.conversationFlow}}
@@ -49,6 +50,8 @@ Here is the conversation history so far:
 {{#each messages}}
 - {{this.role}}: {{this.content}}
 {{/each}}
+
+IMPORTANT: You must respond in the same language as the last user message.
 
 Based on all the information above, generate the next appropriate response as the assistant. Your response should be just the text content, without any "assistant:" prefix.`,
 });

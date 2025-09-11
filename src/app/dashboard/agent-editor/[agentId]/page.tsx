@@ -857,7 +857,7 @@ function ConfigurationTab({ agent, onConfigChange }: { agent: Agent; onConfigCha
                                       <div className="grid grid-cols-2 gap-4">
                                           <div className="space-y-2">
                                               <Label>Provider</Label>
-                                              <Select value={cfg.stt?.provider} onValueChange={v => onConfigChange('stt', 'provider', v)}>
+                                              <Select value={cfg.stt?.provider || 'google'} onValueChange={v => onConfigChange('stt', 'provider', v)}>
                                                   <SelectTrigger><SelectValue placeholder="Select provider" /></SelectTrigger>
                                                   <SelectContent>
                                                       <SelectItem value="google">Google</SelectItem>
@@ -868,7 +868,7 @@ function ConfigurationTab({ agent, onConfigChange }: { agent: Agent; onConfigCha
                                           </div>
                                           <div className="space-y-2">
                                               <Label>Language</Label>
-                                              <Select value={cfg.stt?.language} onValueChange={v => onConfigChange('stt', 'language', v)}>
+                                              <Select value={cfg.stt?.language || 'en-US'} onValueChange={v => onConfigChange('stt', 'language', v)}>
                                                   <SelectTrigger><SelectValue placeholder="Select language" /></SelectTrigger>
                                                   <SelectContent>
                                                       <SelectItem value="en-US">English (US)</SelectItem>
@@ -905,7 +905,7 @@ function ConfigurationTab({ agent, onConfigChange }: { agent: Agent; onConfigCha
                                       <div className="grid grid-cols-1 gap-4">
                                           <div className="space-y-2">
                                               <Label>Model Provider</Label>
-                                              <Select value={cfg.llm?.provider} onValueChange={v => onConfigChange('llm', 'provider', v)}>
+                                              <Select value={cfg.llm?.provider || 'gemini-2.5-flash'} onValueChange={v => onConfigChange('llm', 'provider', v)}>
                                                   <SelectTrigger><SelectValue placeholder="Select model" /></SelectTrigger>
                                                   <SelectContent>
                                                       <SelectItem value="gemini-2.5-flash">Gemini 2.5 Flash</SelectItem>
@@ -1494,7 +1494,7 @@ function WebCallTab({ agent }: { agent: Agent }) {
                 const base64Audio = reader.result as string;
                 
                 // 1. Speech to Text
-                const { text: userText } = await speechToTextAction({ audio: base64Audio });
+                const { text: userText } = await speechToTextAction({ audio: base64Audio, language: agent.configurations?.stt?.language });
                 addMessageToTranscript({ role: 'user', content: userText });
                 
                 const currentTranscript = [...transcript, { role: 'user', content: userText }];

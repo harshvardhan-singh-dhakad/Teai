@@ -48,7 +48,7 @@ export const SpeechToTextInputSchema = z.object({
     .describe(
       "The audio to transcribe as a data URI. Expected format: 'data:audio/wav;base64,<encoded_data>'"
     ),
-  model: z.string().optional().describe('The STT model to use.'),
+  language: z.string().optional().describe('The language of the audio.'),
 });
 export type SpeechToTextInput = z.infer<typeof SpeechToTextInputSchema>;
 
@@ -167,7 +167,12 @@ export const ChatMessageSchema = z.object({
 export type ChatMessage = z.infer<typeof ChatMessageSchema>;
 
 export const RunAgentInputSchema = z.object({
-  agent: AgentSchema.describe("The full agent object containing its definition and configuration."),
+  agent: AgentSchema.extend({
+    configurations: z.any().optional(),
+    integrations: z.any().optional(),
+    knowledgeBase: z.any().optional(),
+    postCallConfigs: z.any().optional(),
+  }).describe("The full agent object containing its definition and configuration."),
   messages: z.array(ChatMessageSchema).describe("The history of the conversation so far."),
 });
 export type RunAgentInput = z.infer<typeof RunAgentInputSchema>;

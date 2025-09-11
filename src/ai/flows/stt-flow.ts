@@ -28,7 +28,7 @@ const speechToTextFlow = ai.defineFlow(
     inputSchema: SpeechToTextInputSchema,
     outputSchema: SpeechToTextOutputSchema,
   },
-  async ({audio, model}) => {
+  async ({audio, language}) => {
     // Note: The 'model' parameter is not directly used in the current Gemini API for STT,
     // but it's good practice to have it for future model selection.
     
@@ -36,7 +36,7 @@ const speechToTextFlow = ai.defineFlow(
       model: googleAI.model('gemini-2.5-flash'), // Using a capable model for transcription
       prompt: [
         {
-          text: 'Transcribe the following audio recording. The user is responding to a conversational AI agent. Only provide the transcribed text, with no extra commentary.',
+          text: `Transcribe the following audio recording. The user is speaking in ${language || 'English'}. The user is responding to a conversational AI agent. Only provide the transcribed text, with no extra commentary.`,
         },
         {media: {url: audio, contentType: 'audio/wav'}},
       ],
