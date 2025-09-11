@@ -222,7 +222,6 @@ export default function AgentEditorPage() {
                   </Button>
                 )}
                  <Button className="bg-green-600 hover:bg-green-700">
-                    <Check className="mr-2 h-4 w-4" />
                     Saved on {lastSavedTime}
                 </Button>
             </div>
@@ -1377,11 +1376,9 @@ function ChatTab({ agent }: { agent: Agent }) {
 
   useEffect(() => {
     let initialMessageContent = "Hello! I am ready to start the conversation.";
-    if (agent?.conversationFlow && agent.conversationFlow.length > 0) {
-        const firstAiMessage = agent.conversationFlow.find(step => step.type === 'aiMessage');
-        if (firstAiMessage && firstAiMessage.content) {
-            initialMessageContent = firstAiMessage.content;
-        }
+    const firstAiMessage = agent?.conversationFlow?.find(step => step.type === 'aiMessage');
+    if (firstAiMessage?.content) {
+        initialMessageContent = firstAiMessage.content;
     }
     setMessages([{ role: 'assistant', content: initialMessageContent }]);
   }, [agent])
@@ -1396,7 +1393,21 @@ function ChatTab({ agent }: { agent: Agent }) {
 
     startTransition(async () => {
       try {
-        const { answer } = await runAgentAction({ agent, messages: newMessages });
+        // We only want to send the serializable parts of the agent to the server action
+        const serializableAgent = {
+            id: agent.id,
+            name: agent.name,
+            description: agent.description,
+            conversationFlow: agent.conversationFlow,
+            status: agent.status,
+            avatar: agent.avatar,
+            createdAt: agent.createdAt,
+            lastEdited: agent.lastEdited,
+            configurations: agent.configurations,
+        };
+
+        // @ts-ignore - We are intentionally sending a simplified agent object
+        const { answer } = await runAgentAction({ agent: serializableAgent, messages: newMessages });
         setMessages(prev => [...prev, { role: 'assistant', content: answer }]);
 
         const { audio } = await textToSpeechAction({ text: answer, voice: agent.configurations?.voice?.voiceId });
@@ -1501,6 +1512,7 @@ function WebCallTab({ agent }: { agent: Agent }) {
                 const currentTranscript = [...transcript, { role: 'user', content: userText }];
 
                 // 2. Get AI Response
+                // @ts-ignore
                 const { answer: aiText } = await runAgentAction({ agent, messages: currentTranscript });
                 addMessageToTranscript({ role: 'assistant', content: aiText });
                 
