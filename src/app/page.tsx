@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Icons } from '@/components/icons';
 import { Github } from 'lucide-react';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 export default function LandingPage() {
   return (
@@ -12,6 +13,7 @@ export default function LandingPage() {
           <span className="text-xl font-bold font-headline text-foreground">Teai</span>
         </Link>
         <div className="flex items-center gap-4">
+          <ThemeToggle />
           <Link href="/login">
             <Button variant="ghost">Login</Button>
           </Link>
