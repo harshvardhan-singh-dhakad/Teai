@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import { useState, useTransition, useEffect } from "react"
@@ -38,6 +39,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Icons } from "@/components/icons";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Terminal } from "lucide-react"
 
 
 const templates: (AgentTemplate & { category: string })[] = [
@@ -54,6 +57,7 @@ export default function AgentBuilderPage() {
   const { toast } = useToast()
   const [draftAgents, setDraftAgents] = useLocalStorage<Agent[]>("agents", [])
   const [publishedAgents, setPublishedAgents] = useState<Agent[]>([]);
+  const [firestoreError, setFirestoreError] = useState<string | null>(null);
   const [isEnhancing, startEnhanceTransition] = useTransition()
   const [isCreating, startCreateTransition] = useTransition()
   
@@ -62,19 +66,30 @@ export default function AgentBuilderPage() {
 
   useEffect(() => {
     const q = query(collection(db, "agents"), orderBy("lastEdited", "desc"));
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const agentsFromFirestore: Agent[] = [];
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        agentsFromFirestore.push({
-          ...data,
-          id: doc.id,
-          createdAt: (data.createdAt as Timestamp)?.toDate().toISOString() || new Date().toISOString(),
-          lastEdited: (data.lastEdited as Timestamp)?.toDate().toISOString() || new Date().toISOString(),
-        } as Agent);
-      });
-      setPublishedAgents(agentsFromFirestore);
-    });
+    const unsubscribe = onSnapshot(q, 
+      (querySnapshot) => {
+        setFirestoreError(null);
+        const agentsFromFirestore: Agent[] = [];
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          agentsFromFirestore.push({
+            ...data,
+            id: doc.id,
+            createdAt: (data.createdAt as Timestamp)?.toDate().toISOString() || new Date().toISOString(),
+            lastEdited: (data.lastEdited as Timestamp)?.toDate().toISOString() || new Date().toISOString(),
+          } as Agent);
+        });
+        setPublishedAgents(agentsFromFirestore);
+      },
+      (error) => {
+        console.error("Firestore snapshot error:", error);
+        if (error.code === 'permission-denied') {
+          setFirestoreError("Permission Denied: Please check your Firestore security rules to allow read access to the 'agents' collection for authenticated users.");
+        } else {
+          setFirestoreError(`An error occurred: ${error.message}`);
+        }
+      }
+    );
 
     return () => unsubscribe();
   }, []);
@@ -216,6 +231,15 @@ export default function AgentBuilderPage() {
                     <CardDescription>A list of your draft and published agents.</CardDescription>
                 </CardHeader>
                 <CardContent>
+                   {firestoreError && (
+                      <Alert variant="destructive" className="mb-4">
+                        <Terminal className="h-4 w-4" />
+                        <AlertTitle>Firestore Error</AlertTitle>
+                        <AlertDescription>
+                          {firestoreError}
+                        </AlertDescription>
+                      </Alert>
+                    )}
                    <Table>
                       <TableHeader>
                         <TableRow>
@@ -262,7 +286,7 @@ export default function AgentBuilderPage() {
                         )) : (
                              <TableRow>
                                 <TableCell colSpan={4} className="h-24 text-center">
-                                    No agents created yet.
+                                    {firestoreError ? "Could not load agents." : "No agents created yet."}
                                 </TableCell>
                             </TableRow>
                         )}
@@ -276,4 +300,5 @@ export default function AgentBuilderPage() {
   )
 }
 
+    
     
