@@ -77,7 +77,7 @@ body {
     --sidebar-accent-foreground: 0 0% 98%;
     --sidebar-border: 240 3.7% 20.9%;
     --sidebar-ring: 275 50% 60%;
-    --gradient-bg: radial-gradient(ellipse at center, #ffb347 0%, #ffd966 30%, #1b263b 60%, #0d1b2a 80%, #000814 100%);
+    --gradient-bg: radial-gradient(ellipse 80% 50% at 50% -20%,rgba(120,119,198,0.3),hsla(0,0%,100%,0));
   }
 }
 
