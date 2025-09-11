@@ -8,19 +8,12 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
-import { AgentSchema, ChatMessageSchema } from '@/types';
-
-export const RunAgentInputSchema = z.object({
-  agent: AgentSchema.describe("The full agent object containing its definition and configuration."),
-  messages: z.array(ChatMessageSchema).describe("The history of the conversation so far."),
-});
-export type RunAgentInput = z.infer<typeof RunAgentInputSchema>;
-
-export const RunAgentOutputSchema = z.object({
-  answer: z.string().describe('The generated response from the agent.'),
-});
-export type RunAgentOutput = z.infer<typeof RunAgentOutputSchema>;
+import {
+  RunAgentInputSchema,
+  RunAgentOutputSchema,
+  type RunAgentInput,
+  type RunAgentOutput,
+} from '@/types';
 
 export async function runAgent(input: RunAgentInput): Promise<RunAgentOutput> {
   return runAgentFlow(input);

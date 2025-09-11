@@ -166,6 +166,18 @@ export const ChatMessageSchema = z.object({
 });
 export type ChatMessage = z.infer<typeof ChatMessageSchema>;
 
+export const RunAgentInputSchema = z.object({
+  agent: AgentSchema.describe("The full agent object containing its definition and configuration."),
+  messages: z.array(ChatMessageSchema).describe("The history of the conversation so far."),
+});
+export type RunAgentInput = z.infer<typeof RunAgentInputSchema>;
+
+export const RunAgentOutputSchema = z.object({
+  answer: z.string().describe('The generated response from the agent.'),
+});
+export type RunAgentOutput = z.infer<typeof RunAgentOutputSchema>;
+
+
 export type Integration = {
   id: string;
   name: string;
