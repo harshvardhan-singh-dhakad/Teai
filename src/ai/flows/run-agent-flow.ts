@@ -28,7 +28,11 @@ const prompt = ai.definePrompt({
 Your identity and instructions are defined below.
 - Name: {{{agent.name}}}
 - Description: {{{agent.description}}}
-- Language: {{#if agent.configurations.stt.language}}{{agent.configurations.stt.language}}{{else}}en-US{{/if}}
+{{#if agent.configurations.stt.language}}
+- Language: {{agent.configurations.stt.language}}
+{{else}}
+- Language: en-US
+{{/if}}
 
 Your conversation flow is structured as a series of steps. Follow these steps to guide the conversation.
 {{#each agent.conversationFlow}}
@@ -43,8 +47,10 @@ Your conversation flow is structured as a series of steps. Follow these steps to
 {{/each}}
 
 You must also adhere to any additional configurations for your behavior:
+{{#if agent.configurations.behavior}}
 - Tone of Voice: {{#if agent.configurations.behavior.toneOfVoice}}{{agent.configurations.behavior.toneOfVoice}}{{else}}professional{{/if}}
 - Assistant Style: {{#if agent.configurations.behavior.assistantStyle}}{{agent.configurations.behavior.assistantStyle}}{{else}}A helpful assistant.{{/if}}
+{{/if}}
 
 Here is the conversation history so far:
 {{#each messages}}
