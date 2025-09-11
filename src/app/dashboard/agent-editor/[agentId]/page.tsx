@@ -187,9 +187,9 @@ export default function AgentEditorPage() {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-full">
-      {/* Left Column: AI Assistant */}
-      <div className="lg:col-span-1 flex flex-col gap-4">
-        <div className="flex items-center gap-4">
+      {/* Left Column: Configuration */}
+      <div className="lg:col-span-2 flex flex-col gap-4">
+         <div className="flex items-center gap-4">
             <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => router.push('/dashboard/agent-builder')}>
                 <ArrowLeft className="h-4 w-4" />
                 <span className="sr-only">Back</span>
@@ -199,38 +199,33 @@ export default function AgentEditorPage() {
                     <AvatarImage src={agent.avatar} alt={agent.name} />
                     <AvatarFallback>{agent.name.substring(0, 2)}</AvatarFallback>
                 </Avatar>
-                <div className="flex flex-col">
-                    <h1 className="flex-1 shrink-0 whitespace-nowrap text-xl font-semibold tracking-tight sm:grow-0 font-headline truncate">
+                <div className="flex-1 min-w-0">
+                    <h1 className="text-xl font-semibold tracking-tight font-headline truncate">
                         {agent.name}
                     </h1>
-                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full self-start ${agent.status === 'draft' ? 'bg-secondary text-secondary-foreground' : 'bg-green-500/20 text-green-400'}`}>
-                      {agent.status}
-                    </span>
                 </div>
             </div>
-        </div>
-        <AssistantChatbot />
-      </div>
-
-      {/* Right Column: Configuration */}
-      <div className="lg:col-span-2 flex flex-col gap-4">
-        <div className="flex items-center justify-end gap-2">
-            <TestAgentDialog agent={agent} />
-            {isPublished ? (
-              <Button onClick={handleUnpublish} variant="outline">
-                <Archive className="h-4 w-4 mr-2" />
-                Unpublish
-              </Button>
-            ) : (
-              <Button onClick={handlePublish}>
-                <HardDriveUpload className="h-4 w-4 mr-2" />
-                Publish
-              </Button>
-            )}
-            <Button className="bg-green-600 hover:bg-green-700">
-                <Check className="mr-2 h-4 w-4" />
-                Saved on {lastSavedTime}
-            </Button>
+             <div className="flex items-center justify-end gap-2 ml-auto">
+                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full self-start ${agent.status === 'draft' ? 'bg-secondary text-secondary-foreground' : 'bg-green-500/20 text-green-400'}`}>
+                  {agent.status}
+                </span>
+                <TestAgentDialog agent={agent} />
+                {isPublished ? (
+                  <Button onClick={handleUnpublish} variant="outline">
+                    <Archive className="h-4 w-4 mr-2" />
+                    Unpublish
+                  </Button>
+                ) : (
+                  <Button onClick={handlePublish}>
+                    <HardDriveUpload className="h-4 w-4 mr-2" />
+                    Publish
+                  </Button>
+                )}
+                 <Button className="bg-green-600 hover:bg-green-700">
+                    <Check className="mr-2 h-4 w-4" />
+                    Saved on {lastSavedTime}
+                </Button>
+            </div>
         </div>
         <Tabs defaultValue="details" className="flex-1 flex flex-col">
           <TabsList>
@@ -274,6 +269,11 @@ export default function AgentEditorPage() {
             </TabsContent>
           </div>
         </Tabs>
+      </div>
+
+       {/* Right Column: AI Assistant */}
+       <div className="lg:col-span-1 flex flex-col gap-4">
+        <AssistantChatbot />
       </div>
     </div>
   )
