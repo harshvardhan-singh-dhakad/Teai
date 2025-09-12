@@ -113,6 +113,9 @@ export type Agent = z.infer<typeof AgentSchema> & {
     vonage?: IntegrationCredentials & { apiKey?: string; apiSecret?: string; };
     exotel?: IntegrationCredentials & { accountSid?: string; apiToken?: string; };
     googleCalendar?: IntegrationCredentials & { apiKey?: string; };
+    gmail?: IntegrationCredentials & { apiKey?: string; };
+    googleDocs?: IntegrationCredentials & { apiKey?: string; };
+    googleSheets?: IntegrationCredentials & { apiKey?: string; };
     slack?: IntegrationCredentials & { webhookUrl?: string; };
     zapier?: IntegrationCredentials;
   };
@@ -189,7 +192,7 @@ export type Integration = {
   name: string;
   description: string;
   icon: React.ElementType;
-  group: 'calling' | 'other';
+  group: 'calling' | 'productivity' | 'other';
   credentials?: { id: string; label: string }[];
 };
 

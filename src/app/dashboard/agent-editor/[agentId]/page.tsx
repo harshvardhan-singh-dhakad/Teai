@@ -51,6 +51,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { cn } from "@/lib/utils"
 import { trainFromWebsiteAction, getAssistantResponse, textToSpeechAction, speechToTextAction, runAgentAction } from "@/app/actions"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Icons } from "@/components/icons";
 
 
 // Helper component to avoid "can't find node" error with react-beautiful-dnd in React 18 strict mode
@@ -668,7 +669,10 @@ function IntegrationsTab({ agent, onIntegrationChange }: { agent: Agent, onInteg
     { id: "twilio", name: "Twilio", description: "Connect for programmable voice and SMS.", icon: Phone, group: 'calling', credentials: [{ id: 'accountSid', label: 'Account SID' }, { id: 'authToken', label: 'Auth Token' }] },
     { id: "vonage", name: "Vonage", description: "APIs for voice, messaging, and video.", icon: Phone, group: 'calling', credentials: [{ id: 'apiKey', label: 'API Key' }, { id: 'apiSecret', label: 'API Secret' }] },
     { id: "exotel", name: "Exotel", description: "Cloud telephony for businesses in India.", icon: Phone, group: 'calling', credentials: [{ id: 'accountSid', label: 'Account SID' }, { id: 'apiToken', label: 'API Token' }] },
-    { id: "googleCalendar", name: "Google Calendar", description: "Automate scheduling and manage events.", icon: Calendar, group: 'other', credentials: [{id: 'apiKey', label: 'API Key'}] },
+    { id: "gmail", name: "Gmail", description: "Read, write, and manage emails.", icon: Icons.gmail, group: 'productivity', credentials: [{id: 'apiKey', label: 'API Key'}] },
+    { id: "googleCalendar", name: "Google Calendar", description: "Automate scheduling and manage events.", icon: Icons.calendar, group: 'productivity', credentials: [{id: 'apiKey', label: 'API Key'}] },
+    { id: "googleSheets", name: "Google Sheets", description: "Read, write, and format spreadsheet data.", icon: Icons.googleSheets, group: 'productivity', credentials: [{id: 'apiKey', label: 'API Key'}] },
+    { id: "googleDocs", name: "Google Docs", description: "Create and edit text documents.", icon: Icons.googleDocs, group: 'productivity', credentials: [{id: 'apiKey', label: 'API Key'}] },
     { id: "slack", name: "Slack", description: "Send notifications and data to channels.", icon: Slack, group: 'other', credentials: [{id: 'webhookUrl', label: 'Webhook URL'}] },
     { id: "zapier", name: "Zapier", description: "Connect your agent to thousands of apps.", icon: Zap, group: 'other', credentials: [] },
   ];
@@ -684,7 +688,8 @@ function IntegrationsTab({ agent, onIntegrationChange }: { agent: Agent, onInteg
   }
 
   const callingProviders = allIntegrations.filter(int => int.group === 'calling');
-  const otherIntegrations = allIntegrations.filter(int => int.group !== 'calling');
+  const productivityIntegrations = allIntegrations.filter(int => int.group === 'productivity');
+  const otherIntegrations = allIntegrations.filter(int => int.group === 'other');
   
   return (
     <div className="grid gap-6">
@@ -720,30 +725,73 @@ function IntegrationsTab({ agent, onIntegrationChange }: { agent: Agent, onInteg
                 </div>
             </CardContent>
         </Card>
+        
+        <Card>
+            <CardHeader>
+                <div className="flex items-center gap-2">
+                    <Icons.bot className="h-5 w-5"/>
+                    <CardTitle className="text-xl font-headline">Productivity</CardTitle>
+                </div>
+                <CardDescription>Connect productivity tools to enhance your agent's capabilities.</CardDescription>
+            </CardHeader>
+            <CardContent className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {productivityIntegrations.map(integration => {
+                   const isConnected = agent.integrations?.[integration.id as keyof Agent['integrations']]?.connected || false;
+                    return (
+                        <Card key={integration.id}>
+                            <CardHeader>
+                                <div className="flex items-center gap-4">
+                                    <integration.icon className="h-8 w-8 text-primary" />
+                                    <CardTitle>{integration.name}</CardTitle>
+                                </div>
+                                <CardDescription>{integration.description}</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                               <IntegrationButton 
+                                  integration={integration} 
+                                  isConnected={isConnected}
+                                  onConnect={handleConnect} 
+                                  onDisconnect={handleDisconnect} />
+                            </CardContent>
+                        </Card>
+                    )
+                })}
+            </CardContent>
+        </Card>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {otherIntegrations.map(integration => {
-               const isConnected = agent.integrations?.[integration.id as keyof Agent['integrations']]?.connected || false;
-                return (
-                    <Card key={integration.id}>
-                        <CardHeader>
-                            <div className="flex items-center gap-4">
-                                <integration.icon className="h-8 w-8 text-primary" />
-                                <CardTitle>{integration.name}</CardTitle>
-                            </div>
-                            <CardDescription>{integration.description}</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                           <IntegrationButton 
-                              integration={integration} 
-                              isConnected={isConnected}
-                              onConnect={handleConnect} 
-                              onDisconnect={handleDisconnect} />
-                        </CardContent>
-                    </Card>
-                )
-            })}
-        </div>
+        <Card>
+            <CardHeader>
+                <div className="flex items-center gap-2">
+                    <Zap className="h-5 w-5"/>
+                    <CardTitle className="text-xl font-headline">Other Integrations</CardTitle>
+                </div>
+                 <CardDescription>Connect to other services and applications.</CardDescription>
+            </CardHeader>
+            <CardContent className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {otherIntegrations.map(integration => {
+                const isConnected = agent.integrations?.[integration.id as keyof Agent['integrations']]?.connected || false;
+                    return (
+                        <Card key={integration.id}>
+                            <CardHeader>
+                                <div className="flex items-center gap-4">
+                                    <integration.icon className="h-8 w-8 text-primary" />
+                                    <CardTitle>{integration.name}</CardTitle>
+                                </div>
+                                <CardDescription>{integration.description}</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                            <IntegrationButton 
+                                integration={integration} 
+                                isConnected={isConnected}
+                                onConnect={handleConnect} 
+                                onDisconnect={handleDisconnect} />
+                            </CardContent>
+                        </Card>
+                    )
+                })}
+            </CardContent>
+        </Card>
+
     </div>
   )
 }
@@ -1418,6 +1466,7 @@ function ChatTab({ agent }: { agent: Agent }) {
             createdAt: agent.createdAt,
             lastEdited: agent.lastEdited,
             configurations: agent.configurations,
+            callType: agent.callType,
         };
 
         const { answer } = await runAgentAction({ agent: serializableAgent, messages: newMessages });
@@ -1525,8 +1574,19 @@ function WebCallTab({ agent }: { agent: Agent }) {
                 const currentTranscript = [...transcript, { role: 'user', content: userText }];
 
                 // 2. Get AI Response
-                // @ts-ignore
-                const { answer: aiText } = await runAgentAction({ agent, messages: currentTranscript });
+                const serializableAgent = {
+                    id: agent.id,
+                    name: agent.name,
+                    description: agent.description,
+                    conversationFlow: agent.conversationFlow || [],
+                    status: agent.status,
+                    avatar: agent.avatar,
+                    createdAt: agent.createdAt,
+                    lastEdited: agent.lastEdited,
+                    configurations: agent.configurations,
+                    callType: agent.callType,
+                };
+                const { answer: aiText } = await runAgentAction({ agent: serializableAgent, messages: currentTranscript });
                 addMessageToTranscript({ role: 'assistant', content: aiText });
                 
                 // 3. Text to Speech
@@ -1764,5 +1824,3 @@ function PhoneCallTab({ agent }: { agent: Agent }) {
         </Card>
     )
 }
-
-    
