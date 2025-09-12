@@ -68,7 +68,7 @@ const StrictModeDroppable = ({ children, ...props }: any) => {
   if (!enabled) {
     return null;
   }
-  return <Droppable {...props}>{children}</Droppable>;
+  return <Droppable {...props} ignoreContainerClipping={true}>{children}</Droppable>;
 };
 
 
@@ -1874,5 +1874,6 @@ function PhoneCallTab({ agent }: { agent: Agent }) {
         </Card>
     )
 }
+
 
 
