@@ -3,6 +3,7 @@
  * @fileOverview A flow to run a single conversation turn for a specific AI agent.
  *
  * - runAgent - A function that executes the agent's logic for one turn.
+ * - runAgentStream - A function that executes the agent's logic for one turn and streams the response.
  * - RunAgentInput - The input type for the runAgent function.
  * - RunAgentOutput - The return type for the runAgent function.
  */
@@ -14,16 +15,9 @@ import {
   type RunAgentInput,
   type RunAgentOutput,
 } from '@/types';
+import {generate, streamGenerate} from 'genkit/ai';
 
-export async function runAgent(input: RunAgentInput): Promise<RunAgentOutput> {
-  return runAgentFlow(input);
-}
-
-const prompt = ai.definePrompt({
-  name: 'runAgentPrompt',
-  input: {schema: RunAgentInputSchema},
-  output: {schema: RunAgentOutputSchema},
-  prompt: `You are a voice AI assistant.
+const agentPrompt = `You are a voice AI assistant.
 
 Your identity and instructions are defined below.
 - Name: {{{agent.name}}}
@@ -59,8 +53,34 @@ Here is the conversation history so far:
 
 IMPORTANT: You must respond in the same language as the last user message.
 
-Based on all the information above, generate the next appropriate response as the assistant. Your response should be just the text content, without any "assistant:" prefix.`,
-});
+Based on all the information above, generate the next appropriate response as the assistant. Your response should be just the text content, without any "assistant:" prefix.`;
+
+export async function runAgent(input: RunAgentInput): Promise<RunAgentOutput> {
+  return runAgentFlow(input);
+}
+
+export async function runAgentStream(
+  input: RunAgentInput
+): Promise<ReadableStream<string>> {
+  return runAgentStreamFlow(input);
+}
+
+const prompt = ai.definePrompt(
+  {
+    name: 'runAgentPrompt',
+    input: {schema: RunAgentInputSchema},
+    output: {schema: RunAgentOutputSchema},
+    prompt: agentPrompt,
+  },
+  async input => {
+    // A simple helper to add numbers in Handlebars
+    ai.handlebars.registerHelper('add', (a, b) => a + b);
+    return {
+      prompt: agentPrompt,
+      context: [input],
+    };
+  }
+);
 
 const runAgentFlow = ai.defineFlow(
   {
@@ -69,10 +89,25 @@ const runAgentFlow = ai.defineFlow(
     outputSchema: RunAgentOutputSchema,
   },
   async input => {
-    // A simple helper to add numbers in Handlebars
-    ai.handlebars.registerHelper('add', (a, b) => a + b);
-
     const {output} = await prompt(input);
     return output!;
+  }
+);
+
+const runAgentStreamFlow = ai.defineFlow(
+  {
+    name: 'runAgentStreamFlow',
+    inputSchema: RunAgentInputSchema,
+    outputSchema: z.string(),
+  },
+  async input => {
+    const stream = await generate({
+      prompt: agentPrompt,
+      model: ai.getModel(),
+      context: [input],
+      stream: true,
+    });
+
+    return stream.textStream;
   }
 );

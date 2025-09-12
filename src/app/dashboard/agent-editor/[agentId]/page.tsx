@@ -49,7 +49,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Checkbox } from "@/components/ui/checkbox"
 import { cn } from "@/lib/utils"
-import { trainFromWebsiteAction, getAssistantResponse, textToSpeechAction, speechToTextAction, runAgentAction } from "@/app/actions"
+import { trainFromWebsiteAction, getAssistantResponse, textToSpeechAction, speechToTextAction } from "@/app/actions"
+import { runAgent } from '@/ai/flows/run-agent-flow';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Icons } from "@/components/icons";
 
@@ -1434,7 +1435,7 @@ function DisabledTestTab({ message }: { message: string }) {
 function ChatTab({ agent }: { agent: Agent }) {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState("")
-  const [isThinking, startTransition] = useTransition()
+  const [isThinking, setIsThinking] = useState(false)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const { toast } = useToast()
@@ -1455,16 +1456,16 @@ function ChatTab({ agent }: { agent: Agent }) {
     setMessages([{ role: 'assistant', content: initialMessageContent }]);
   }, [agent])
 
-  const handleSendMessage = () => {
-    if (!input.trim() || !agent) return
+  const handleSendMessage = async () => {
+    if (!input.trim() || !agent) return;
 
-    const newMessages: ChatMessage[] = [...messages, { role: 'user', content: input }]
-    setMessages(newMessages)
+    const newMessages: ChatMessage[] = [...messages, { role: 'user', content: input }];
+    setMessages(newMessages);
     const currentInput = input;
-    setInput("")
+    setInput("");
+    setIsThinking(true);
 
-    startTransition(async () => {
-      try {
+    try {
         const serializableAgent = {
             id: agent.id,
             name: agent.name,
@@ -1477,27 +1478,64 @@ function ChatTab({ agent }: { agent: Agent }) {
             configurations: agent.configurations,
             callType: agent.callType,
         };
-
-        const { answer } = await runAgentAction({ agent: serializableAgent, messages: newMessages });
-        setMessages(prev => [...prev, { role: 'assistant', content: answer }]);
-
-        const { audio } = await textToSpeechAction({ text: answer, voice: agent.configurations?.voice?.voiceId });
         
-        if (audioRef.current) {
-          audioRef.current.src = audio;
-          audioRef.current.play().catch(e => console.error("Audio playback failed:", e));
+        const response = await fetch('/api/chat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                agent: serializableAgent,
+                messages: newMessages,
+            }),
+        });
+
+        if (!response.body) {
+            throw new Error("Response body is empty");
         }
 
-      } catch (error) {
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let fullResponse = "";
+        
+        setMessages(prev => [...prev, { role: 'assistant', content: "" }]);
+
+        while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            
+            const chunk = decoder.decode(value, { stream: true });
+            fullResponse += chunk;
+            
+            setMessages(prev => {
+                const updatedMessages = [...prev];
+                const lastMessage = updatedMessages[updatedMessages.length - 1];
+                if (lastMessage.role === 'assistant') {
+                    lastMessage.content = fullResponse;
+                }
+                return updatedMessages;
+            });
+        }
+        
+        setIsThinking(false);
+
+        const { audio } = await textToSpeechAction({ text: fullResponse, voice: agent.configurations?.voice?.voiceId });
+        
+        if (audioRef.current) {
+            audioRef.current.src = audio;
+            audioRef.current.play().catch(e => console.error("Audio playback failed:", e));
+        }
+
+    } catch (error) {
         console.error("Error in conversation:", error);
         toast({
-          title: "Error",
-          description: "Failed to get response from the agent. Please try again.",
-          variant: "destructive"
-        })
-      }
-    })
-  }
+            title: "Error",
+            description: "Failed to get response from the agent. Please try again.",
+            variant: "destructive"
+        });
+        setIsThinking(false);
+    }
+  };
 
   return (
     <Card className="mt-4">
@@ -1518,7 +1556,7 @@ function ChatTab({ agent }: { agent: Agent }) {
                             </div>
                         </div>
                     ))}
-                     {isThinking && (
+                     {isThinking && messages[messages.length-1]?.role !== 'assistant' && (
                       <div className="flex items-start gap-3">
                           <Avatar className="h-8 w-8">
                               <AvatarFallback>{agent.name.substring(0,2).toUpperCase()}</AvatarFallback>
@@ -1595,7 +1633,7 @@ function WebCallTab({ agent }: { agent: Agent }) {
                     configurations: agent.configurations,
                     callType: agent.callType,
                 };
-                const { answer: aiText } = await runAgentAction({ agent: serializableAgent, messages: currentTranscript });
+                const { answer: aiText } = await runAgent({ agent: serializableAgent, messages: currentTranscript });
                 addMessageToTranscript({ role: 'assistant', content: aiText });
                 
                 // 3. Text to Speech
@@ -1833,3 +1871,4 @@ function PhoneCallTab({ agent }: { agent: Agent }) {
         </Card>
     )
 }
+

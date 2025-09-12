@@ -7,8 +7,9 @@ import { assistantHelper, AssistantHelperInput, AssistantHelperOutput } from '@/
 import { textToSpeech } from '@/ai/flows/tts-flow';
 import { speechToText } from '@/ai/flows/stt-flow';
 import { trainFromWebsite } from '@/ai/flows/train-from-website';
-import { runAgent } from '@/ai/flows/run-agent-flow';
+import { runAgent, runAgentStream } from '@/ai/flows/run-agent-flow';
 import type { TextToSpeechInput, TextToSpeechOutput, SpeechToTextInput, SpeechToTextOutput, TrainFromWebsiteInput, TrainFromWebsiteOutput, RunAgentInput, RunAgentOutput } from '@/types';
+import { streamToResponse } from '@genkit-ai/next';
 
 export async function enhancePromptAction(input: EnhanceUserPromptInput): Promise<EnhanceUserPromptOutput> {
   try {
@@ -34,15 +35,6 @@ export async function getAssistantResponse(input: AssistantHelperInput): Promise
     } catch (error) {
         console.error('Error getting assistant response:', error);
         throw new Error('Failed to get response from assistant.');
-    }
-}
-
-export async function runAgentAction(input: RunAgentInput): Promise<RunAgentOutput> {
-    try {
-        return await runAgent(input);
-    } catch (error) {
-        console.error('Error running agent:', error);
-        throw new Error('Failed to get response from agent.');
     }
 }
 
