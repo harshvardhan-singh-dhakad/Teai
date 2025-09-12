@@ -17,6 +17,7 @@ import {
 } from '@/types';
 import {generate} from 'genkit';
 import {z} from 'zod';
+import {textToSpeech} from './tts-flow';
 
 const agentPrompt = `You are a voice AI assistant.
 
@@ -70,7 +71,7 @@ const prompt = ai.definePrompt(
   {
     name: 'runAgentPrompt',
     input: {schema: RunAgentInputSchema},
-    output: {schema: RunAgentOutputSchema},
+    output: {schema: z.object({ answer: z.string() })},
   },
   async input => {
     // A simple helper to add numbers in Handlebars
@@ -90,7 +91,12 @@ const runAgentFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await prompt(input);
-    return output!;
+    const answer = output!.answer;
+
+    // Generate speech and include it in the final output
+    const { audio } = await textToSpeech({ text: answer, voice: input.agent.configurations?.voice?.voiceId });
+
+    return { answer, audio };
   }
 );
 

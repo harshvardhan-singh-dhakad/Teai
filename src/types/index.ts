@@ -184,6 +184,7 @@ export type RunAgentInput = z.infer<typeof RunAgentInputSchema>;
 
 export const RunAgentOutputSchema = z.object({
   answer: z.string().describe('The generated response from the agent.'),
+  audio: z.string().describe("The generated audio as a data URI."),
 });
 export type RunAgentOutput = z.infer<typeof RunAgentOutputSchema>;
 

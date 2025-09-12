@@ -1620,7 +1620,7 @@ function WebCallTab({ agent }: { agent: Agent }) {
                 
                 const currentTranscript = [...transcript, { role: 'user', content: userText }];
 
-                // 2. Get AI Response
+                // 2. Get AI Response and Audio
                 const serializableAgent = {
                     id: agent.id,
                     name: agent.name,
@@ -1633,15 +1633,14 @@ function WebCallTab({ agent }: { agent: Agent }) {
                     configurations: agent.configurations,
                     callType: agent.callType,
                 };
-                const { answer: aiText } = await runAgent({ agent: serializableAgent, messages: currentTranscript });
+                const { answer: aiText, audio: aiAudio } = await runAgent({ agent: serializableAgent, messages: currentTranscript });
                 addMessageToTranscript({ role: 'assistant', content: aiText });
                 
-                // 3. Text to Speech
+                // 3. Play Audio
                 setIsThinking(false);
                 setIsSpeaking(true);
-                const { audio: aiAudio } = await textToSpeechAction({ text: aiText, voice: agent.configurations?.voice?.voiceId });
                 
-                if (audioRef.current) {
+                if (audioRef.current && aiAudio) {
                     audioRef.current.src = aiAudio;
                     audioRef.current.play();
                     audioRef.current.onended = () => {
@@ -1650,6 +1649,9 @@ function WebCallTab({ agent }: { agent: Agent }) {
                            startListening(); // Listen for the next user input
                         }
                     };
+                } else {
+                    setIsSpeaking(false);
+                    if(isCallActive) startListening();
                 }
             };
         } catch (error) {
@@ -1657,12 +1659,13 @@ function WebCallTab({ agent }: { agent: Agent }) {
             toast({ title: "Error", description: "Could not process audio. Please try again.", variant: "destructive" });
             setIsThinking(false);
             setIsSpeaking(false);
+             if (isCallActive) startListening();
         }
     };
     
     const startListening = () => {
-        if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-            mediaRecorderRef.current.stop();
+        if (!isCallActive || (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording')) {
+            return;
         }
         
         navigator.mediaDevices.getUserMedia({ audio: true })
@@ -1686,9 +1689,9 @@ function WebCallTab({ agent }: { agent: Agent }) {
                     const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
                     if (audioBlob.size > 1000) { // Only process if there is some audio
                       processAudio(audioBlob);
-                    } else {
-                       // If no audio, just start listening again if the call is active
-                       if(isCallActive) startListening();
+                    } else if (isCallActive) {
+                       // If no audio, just start listening again
+                       startListening();
                     }
                 };
                 
@@ -1871,4 +1874,5 @@ function PhoneCallTab({ agent }: { agent: Agent }) {
         </Card>
     )
 }
+
 
