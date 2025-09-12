@@ -187,11 +187,6 @@ export default function AgentEditorPage() {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-full">
-      {/* Right Column: AI Assistant */}
-       <div className="lg:col-span-1 flex flex-col gap-4">
-        <AssistantChatbot />
-      </div>
-
       {/* Left Column: Configuration */}
       <div className="lg:col-span-2 flex flex-col gap-4">
          <div className="flex items-center gap-4">
@@ -273,6 +268,11 @@ export default function AgentEditorPage() {
             </TabsContent>
           </div>
         </Tabs>
+      </div>
+      
+      {/* Right Column: AI Assistant */}
+       <div className="lg:col-span-1 flex flex-col gap-4">
+        <AssistantChatbot />
       </div>
     </div>
   )
@@ -1683,6 +1683,35 @@ function WebCallTab({ agent }: { agent: Agent }) {
 }
 
 function PhoneCallTab({ agent }: { agent: Agent }) {
+    const { toast } = useToast();
+    const [phoneNumber, setPhoneNumber] = useState("");
+    const [isCalling, setIsCalling] = useState(false);
+    const [callStatus, setCallStatus] = useState("Call logs will appear here...");
+
+    const handleStartCall = () => {
+        if (!phoneNumber.trim()) {
+            toast({
+                title: "Phone Number Required",
+                description: "Please enter your phone number to start a call.",
+                variant: "destructive",
+            });
+            return;
+        }
+        setIsCalling(true);
+        setCallStatus(`Placing call to ${phoneNumber}...`);
+        toast({ title: "Placing Call", description: `Calling ${phoneNumber}...` });
+
+        setTimeout(() => {
+            setCallStatus("Call connected. You can now speak to your agent.");
+        }, 3000);
+    };
+
+    const handleStopCall = () => {
+        setIsCalling(false);
+        setCallStatus("Call ended.");
+        toast({ title: "Call Ended" });
+    };
+
     return (
         <Card className="mt-4">
             <CardHeader>
@@ -1700,19 +1729,20 @@ function PhoneCallTab({ agent }: { agent: Agent }) {
                             <SelectItem value="+1">US +1</SelectItem>
                         </SelectContent>
                     </Select>
-                    <Input placeholder="Your phone number" />
+                    <Input 
+                        placeholder="Your phone number" 
+                        value={phoneNumber} 
+                        onChange={(e) => setPhoneNumber(e.target.value)}
+                        disabled={isCalling}
+                    />
                 </div>
-                 <Alert variant="destructive">
-                    <Info className="h-4 w-4" />
-                    <AlertTitle>Upgrade Required</AlertTitle>
-                    <AlertDescription>
-                       Free plan: Max 2 calls, 2 minutes each.
-                       <Button variant="link" className="p-0 h-auto ml-1">Upgrade Now.</Button>
-                    </AlertDescription>
-                </Alert>
-                <div className="p-4 border-2 border-dashed rounded-lg min-h-[150px] flex flex-col items-center justify-center text-center bg-secondary/30">
-                    <p className="text-muted-foreground mb-4">Call logs will appear here...</p>
-                    <Button><Phone className="mr-2" /> Start Phone Call</Button>
+                <div className="p-4 border-2 border-dashed rounded-lg min-h-[150px] flex flex-col items-center justify-center text-center bg-secondary/30 space-y-4">
+                    <p className="text-muted-foreground">{callStatus}</p>
+                    {!isCalling ? (
+                        <Button onClick={handleStartCall}><Phone className="mr-2" /> Start Phone Call</Button>
+                    ) : (
+                         <Button onClick={handleStopCall} variant="destructive"><PhoneOff className="mr-2" /> End Call</Button>
+                    )}
                 </div>
                 <p className="text-xs text-muted-foreground text-center">You should receive the call within 2 minutes.</p>
             </CardContent>
