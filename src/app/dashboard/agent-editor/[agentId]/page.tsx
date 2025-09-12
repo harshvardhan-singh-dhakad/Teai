@@ -665,16 +665,16 @@ function KnowledgeBaseTab({ agent, updateAgent }: { agent: Agent; updateAgent: (
 function IntegrationsTab({ agent, onIntegrationChange }: { agent: Agent, onIntegrationChange: (id: keyof NonNullable<Agent['integrations']>, connected: boolean, creds?: any) => void }) {
   const { toast } = useToast()
 
-  const allIntegrations: Integration[] = [
-    { id: "twilio", name: "Twilio", description: "Connect for programmable voice and SMS.", icon: Phone, group: 'calling', credentials: [{ id: 'accountSid', label: 'Account SID' }, { id: 'authToken', label: 'Auth Token' }] },
-    { id: "vonage", name: "Vonage", description: "APIs for voice, messaging, and video.", icon: Phone, group: 'calling', credentials: [{ id: 'apiKey', label: 'API Key' }, { id: 'apiSecret', label: 'API Secret' }] },
-    { id: "exotel", name: "Exotel", description: "Cloud telephony for businesses in India.", icon: Phone, group: 'calling', credentials: [{ id: 'accountSid', label: 'Account SID' }, { id: 'apiToken', label: 'API Token' }] },
-    { id: "gmail", name: "Gmail", description: "Read, write, and manage emails.", icon: Icons.gmail, group: 'productivity', credentials: [{id: 'apiKey', label: 'API Key'}] },
-    { id: "googleCalendar", name: "Google Calendar", description: "Automate scheduling and manage events.", icon: Icons.calendar, group: 'productivity', credentials: [{id: 'apiKey', label: 'API Key'}] },
-    { id: "googleSheets", name: "Google Sheets", description: "Read, write, and format spreadsheet data.", icon: Icons.googleSheets, group: 'productivity', credentials: [{id: 'apiKey', label: 'API Key'}] },
-    { id: "googleDocs", name: "Google Docs", description: "Create and edit text documents.", icon: Icons.googleDocs, group: 'productivity', credentials: [{id: 'apiKey', label: 'API Key'}] },
-    { id: "slack", name: "Slack", description: "Send notifications and data to channels.", icon: Slack, group: 'other', credentials: [{id: 'webhookUrl', label: 'Webhook URL'}] },
-    { id: "zapier", name: "Zapier", description: "Connect your agent to thousands of apps.", icon: Zap, group: 'other', credentials: [] },
+  const allIntegrations: (Integration & { usage: 'During call' | 'Post-call' })[] = [
+    { id: "twilio", name: "Twilio", description: "Connect for programmable voice and SMS.", icon: Phone, group: 'calling', usage: 'During call', credentials: [{ id: 'accountSid', label: 'Account SID' }, { id: 'authToken', label: 'Auth Token' }] },
+    { id: "vonage", name: "Vonage", description: "APIs for voice, messaging, and video.", icon: Phone, group: 'calling', usage: 'During call', credentials: [{ id: 'apiKey', label: 'API Key' }, { id: 'apiSecret', label: 'API Secret' }] },
+    { id: "exotel", name: "Exotel", description: "Cloud telephony for businesses in India.", icon: Phone, group: 'calling', usage: 'During call', credentials: [{ id: 'accountSid', label: 'Account SID' }, { id: 'apiToken', label: 'API Token' }] },
+    { id: "gmail", name: "Gmail", description: "Read, write, and manage emails.", icon: Icons.gmail, group: 'productivity', usage: 'During call', credentials: [{id: 'apiKey', label: 'API Key'}] },
+    { id: "googleCalendar", name: "Google Calendar", description: "Automate scheduling and manage events.", icon: Icons.calendar, group: 'productivity', usage: 'During call', credentials: [{id: 'apiKey', label: 'API Key'}] },
+    { id: "googleSheets", name: "Google Sheets", description: "Read, write, and format spreadsheet data.", icon: Icons.googleSheets, group: 'productivity', usage: 'During call', credentials: [{id: 'apiKey', label: 'API Key'}] },
+    { id: "googleDocs", name: "Google Docs", description: "Create and edit text documents.", icon: Icons.googleDocs, group: 'productivity', usage: 'During call', credentials: [{id: 'apiKey', label: 'API Key'}] },
+    { id: "slack", name: "Slack", description: "Send notifications and data to channels.", icon: Slack, group: 'other', usage: 'Post-call', credentials: [{id: 'webhookUrl', label: 'Webhook URL'}] },
+    { id: "zapier", name: "Zapier", description: "Connect your agent to thousands of apps.", icon: Zap, group: 'other', usage: 'Post-call', credentials: [] },
   ];
 
   const handleConnect = (id: keyof NonNullable<Agent['integrations']>, newCredentials?: Record<string, string>) => {
@@ -710,7 +710,10 @@ function IntegrationsTab({ agent, onIntegrationChange }: { agent: Agent, onInteg
                                 <div className="flex items-center gap-4">
                                     <integration.icon className="h-8 w-8 text-muted-foreground" />
                                     <div>
-                                        <h3 className="font-semibold">{integration.name}</h3>
+                                        <div className="flex items-center gap-2">
+                                            <h3 className="font-semibold">{integration.name}</h3>
+                                            <Badge variant="outline" className="border-green-400 text-green-400">{integration.usage}</Badge>
+                                        </div>
                                         <p className="text-sm text-muted-foreground">{integration.description}</p>
                                     </div>
                                 </div>
@@ -742,9 +745,12 @@ function IntegrationsTab({ agent, onIntegrationChange }: { agent: Agent, onInteg
                             <CardHeader>
                                 <div className="flex items-center gap-4">
                                     <integration.icon className="h-8 w-8 text-primary" />
-                                    <CardTitle>{integration.name}</CardTitle>
+                                    <div>
+                                        <CardTitle>{integration.name}</CardTitle>
+                                        <Badge variant="outline" className="border-green-400 text-green-400 mt-1">{integration.usage}</Badge>
+                                    </div>
                                 </div>
-                                <CardDescription>{integration.description}</CardDescription>
+                                <CardDescription className="pt-2">{integration.description}</CardDescription>
                             </CardHeader>
                             <CardContent>
                                <IntegrationButton 
@@ -775,9 +781,12 @@ function IntegrationsTab({ agent, onIntegrationChange }: { agent: Agent, onInteg
                             <CardHeader>
                                 <div className="flex items-center gap-4">
                                     <integration.icon className="h-8 w-8 text-primary" />
-                                    <CardTitle>{integration.name}</CardTitle>
+                                    <div>
+                                        <CardTitle>{integration.name}</CardTitle>
+                                        <Badge variant="outline" className="border-green-400 text-green-400 mt-1">{integration.usage}</Badge>
+                                    </div>
                                 </div>
-                                <CardDescription>{integration.description}</CardDescription>
+                                <CardDescription className="pt-2">{integration.description}</CardDescription>
                             </CardHeader>
                             <CardContent>
                             <IntegrationButton 
