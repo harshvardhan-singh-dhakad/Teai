@@ -98,6 +98,7 @@ export const AgentSchema = z.object({
   id: z.string(),
   name: z.string(),
   description: z.string(),
+  callType: z.enum(['incoming', 'outgoing']).optional(),
   conversationFlow: z.array(ConversationStepSchema),
   status: z.enum(['draft', 'published']),
   avatar: z.string().optional(),

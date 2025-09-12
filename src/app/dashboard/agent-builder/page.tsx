@@ -4,7 +4,7 @@
 
 import { useState, useTransition, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { PlusCircle, Sparkles, FileText, ShoppingCart, Headset, CornerDownLeft, MoreHorizontal, Pencil, Trash2 } from "lucide-react"
+import { PlusCircle, Sparkles, FileText, ShoppingCart, Headset, CornerDownLeft, MoreHorizontal, Pencil, Trash2, ArrowRightToLine, ArrowLeftFromLine } from "lucide-react"
 import { onSnapshot, collection, query, orderBy, addDoc, doc, deleteDoc, updateDoc, serverTimestamp, Timestamp } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button"
@@ -41,6 +41,7 @@ import {
 import { Icons } from "@/components/icons";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Terminal } from "lucide-react"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
 
 const templates: (AgentTemplate & { category: string })[] = [
@@ -62,6 +63,7 @@ export default function AgentBuilderPage() {
   const [isCreating, startCreateTransition] = useTransition()
   
   const [prompt, setPrompt] = useState("")
+  const [callType, setCallType] = useState<'incoming' | 'outgoing'>('incoming');
   const [activeFilter, setActiveFilter] = useState("Popular")
 
   useEffect(() => {
@@ -122,6 +124,7 @@ export default function AgentBuilderPage() {
         const newAgent: Agent = {
           id: `agent-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
           status: 'draft',
+          callType: callType,
           createdAt: new Date().toISOString(),
           lastEdited: new Date().toISOString(),
           avatar: `https://picsum.photos/seed/${Math.random()}/100`,
@@ -217,7 +220,20 @@ export default function AgentBuilderPage() {
                         </div>
                     </div>
                 </CardContent>
-                 <CardFooter>
+                 <CardFooter className="flex-col items-start gap-4">
+                     <div className="flex flex-col space-y-2 w-full">
+                        <Label>Call Type</Label>
+                        <RadioGroup defaultValue="incoming" value={callType} onValueChange={(value: 'incoming' | 'outgoing') => setCallType(value)} className="flex gap-4">
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="incoming" id="incoming" />
+                                <Label htmlFor="incoming">Incoming</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="outgoing" id="outgoing" />
+                                <Label htmlFor="outgoing">Outgoing</Label>
+                            </div>
+                        </RadioGroup>
+                    </div>
                     <Button onClick={handleCreateAgent} disabled={isCreating} className="w-full">
                         {isCreating ? 'Creating Agent...' : 'Create Voice AI Assistant'} <CornerDownLeft className="ml-2 h-4 w-4" />
                     </Button>
@@ -254,7 +270,13 @@ export default function AgentBuilderPage() {
                             <TableRow key={agent.id}>
                                 <TableCell className="font-medium">
                                     <div className="font-semibold">{agent.name}</div>
-                                    <div className="text-xs text-muted-foreground line-clamp-1">{agent.description}</div>
+                                    <div className="text-xs text-muted-foreground line-clamp-1 mb-1">{agent.description}</div>
+                                    {agent.callType && (
+                                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                        {agent.callType === 'incoming' ? <ArrowLeftFromLine className="h-3 w-3 text-blue-400" /> : <ArrowRightToLine className="h-3 w-3 text-green-400" />}
+                                        <span className="capitalize">{agent.callType}</span>
+                                      </div>
+                                    )}
                                 </TableCell>
                                 <TableCell>
                                     <Badge variant={agent.status === 'draft' ? 'secondary' : 'default'} className={agent.status === 'published' ? 'bg-green-500/20 text-green-400 border-transparent hover:bg-green-500/30' : ''}>
