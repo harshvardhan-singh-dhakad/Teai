@@ -1,5 +1,4 @@
 
-
 "use client"
 
 import React, { useEffect, useState, useRef, useTransition } from "react"
@@ -1399,20 +1398,20 @@ function TestAgentDialog({ agent }: { agent: Agent }) {
             </Select>
         </div>
 
-        <Tabs defaultValue={isIncomingAgent ? "chat" : "phone-call"} className="w-full">
+        <Tabs defaultValue={"chat"} className="w-full">
             <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="chat" disabled={isOutgoingAgent}>Chat</TabsTrigger>
-                <TabsTrigger value="web-call" disabled={isOutgoingAgent}>Web Call</TabsTrigger>
-                <TabsTrigger value="phone-call" disabled={isIncomingAgent}>Phone Call</TabsTrigger>
+                <TabsTrigger value="chat" >Chat</TabsTrigger>
+                <TabsTrigger value="web-call" >Web Call</TabsTrigger>
+                <TabsTrigger value="phone-call" >Phone Call</TabsTrigger>
             </TabsList>
             <TabsContent value="chat">
-              {isIncomingAgent ? <ChatTab agent={selectedAgent} /> : <DisabledTestTab message="Chat test is for incoming agents only." />}
+              <ChatTab agent={selectedAgent} />
             </TabsContent>
             <TabsContent value="web-call">
-              {isIncomingAgent ? <WebCallTab agent={selectedAgent} /> : <DisabledTestTab message="Web Call test is for incoming agents only." />}
+              <WebCallTab agent={selectedAgent} />
             </TabsContent>
             <TabsContent value="phone-call">
-              {isOutgoingAgent ? <PhoneCallTab agent={selectedAgent} /> : <DisabledTestTab message="Phone Call test is for outgoing agents only." />}
+              <PhoneCallTab agent={selectedAgent} />
             </TabsContent>
         </Tabs>
       </DialogContent>
@@ -1875,5 +1874,4 @@ function PhoneCallTab({ agent }: { agent: Agent }) {
     )
 }
 
-
-
+    
