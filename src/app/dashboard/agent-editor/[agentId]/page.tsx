@@ -1303,6 +1303,9 @@ function TestAgentDialog({ agent }: { agent: Agent }) {
   const [selectedAgentId, setSelectedAgentId] = useState<string | undefined>(agent.id)
   
   const selectedAgent = agents.find(a => a.id === selectedAgentId) || agent;
+  const isOutgoingAgent = selectedAgent?.callType === 'outgoing';
+  const isIncomingAgent = !isOutgoingAgent;
+
 
   return (
     <Dialog>
@@ -1338,25 +1341,37 @@ function TestAgentDialog({ agent }: { agent: Agent }) {
             </Select>
         </div>
 
-        <Tabs defaultValue="chat" className="w-full">
+        <Tabs defaultValue={isIncomingAgent ? "chat" : "phone-call"} className="w-full">
             <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="chat">Chat</TabsTrigger>
-                <TabsTrigger value="web-call">Web Call</TabsTrigger>
-                <TabsTrigger value="phone-call">Phone Call</TabsTrigger>
+                <TabsTrigger value="chat" disabled={isOutgoingAgent}>Chat</TabsTrigger>
+                <TabsTrigger value="web-call" disabled={isOutgoingAgent}>Web Call</TabsTrigger>
+                <TabsTrigger value="phone-call" disabled={isIncomingAgent}>Phone Call</TabsTrigger>
             </TabsList>
             <TabsContent value="chat">
-                <ChatTab agent={selectedAgent} />
+              {isIncomingAgent ? <ChatTab agent={selectedAgent} /> : <DisabledTestTab message="Chat test is for incoming agents only." />}
             </TabsContent>
             <TabsContent value="web-call">
-                <WebCallTab agent={selectedAgent} />
+              {isIncomingAgent ? <WebCallTab agent={selectedAgent} /> : <DisabledTestTab message="Web Call test is for incoming agents only." />}
             </TabsContent>
             <TabsContent value="phone-call">
-                <PhoneCallTab agent={selectedAgent} />
+              {isOutgoingAgent ? <PhoneCallTab agent={selectedAgent} /> : <DisabledTestTab message="Phone Call test is for outgoing agents only." />}
             </TabsContent>
         </Tabs>
       </DialogContent>
     </Dialog>
   )
+}
+
+function DisabledTestTab({ message }: { message: string }) {
+    return (
+        <Card className="mt-4">
+            <CardContent className="pt-6">
+                <div className="p-8 border-2 border-dashed rounded-lg min-h-[300px] flex flex-col items-center justify-center text-center bg-secondary/30 space-y-4">
+                    <p className="text-muted-foreground">{message}</p>
+                </div>
+            </CardContent>
+        </Card>
+    );
 }
 
 function ChatTab({ agent }: { agent: Agent }) {
@@ -1749,3 +1764,5 @@ function PhoneCallTab({ agent }: { agent: Agent }) {
         </Card>
     )
 }
+
+    
