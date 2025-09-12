@@ -15,7 +15,8 @@ import {
   type RunAgentInput,
   type RunAgentOutput,
 } from '@/types';
-import {generate, streamGenerate} from 'genkit/ai';
+import {generate} from 'genkit';
+import {z} from 'zod';
 
 const agentPrompt = `You are a voice AI assistant.
 
@@ -70,7 +71,6 @@ const prompt = ai.definePrompt(
     name: 'runAgentPrompt',
     input: {schema: RunAgentInputSchema},
     output: {schema: RunAgentOutputSchema},
-    prompt: agentPrompt,
   },
   async input => {
     // A simple helper to add numbers in Handlebars
@@ -101,13 +101,25 @@ const runAgentStreamFlow = ai.defineFlow(
     outputSchema: z.string(),
   },
   async input => {
-    const stream = await generate({
+    const {stream, response} = ai.generate({
       prompt: agentPrompt,
       model: ai.getModel(),
       context: [input],
       stream: true,
     });
-
-    return stream.textStream;
+    
+    const chunks: string[] = [];
+    for await (const chunk of stream) {
+      chunks.push(chunk.text);
+    }
+    
+    return new ReadableStream({
+      start(controller) {
+        for (const chunk of chunks) {
+          controller.enqueue(chunk);
+        }
+        controller.close();
+      }
+    });
   }
 );
