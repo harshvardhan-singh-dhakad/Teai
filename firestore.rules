@@ -3,18 +3,19 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Allow users to read agents if they are logged in.
-    // Allow any logged-in user to create an agent.
-    // Only allow the owner of an agent to update or delete it.
+    // Allow logged-in users to read the list of agents
+    // Allow any logged-in user to create an agent
     match /agents/{agentId} {
       allow read: if request.auth != null;
       allow create: if request.auth != null;
+      // Only allow the owner of the agent to update or delete it
       allow update, delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
     }
 
-    // Allow any logged-in user to create chat logs.
+    // Allow any logged-in user to create chat logs
     match /chatLogs/{logId} {
       allow create: if request.auth != null;
+      allow read, update, delete: if false; // By default, don't allow reading/modifying logs from client
     }
   }
 }
