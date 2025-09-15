@@ -1,10 +1,13 @@
 
+
 "use client"
 
-import React, { useEffect, useState, useRef, useTransition } from "react"
+import React, { useEffect, useState, useRef, useTransition, useCallback } from "react"
 import { notFound, useRouter, useParams } from 'next/navigation'
 import { ArrowLeft, HardDriveUpload, FlaskConical, UploadCloud, FileText, Trash2, Eye, Languages, Mic, BrainCircuit, PhoneForwarded, Voicemail, Bot, Smile, Info, Plus, GripVertical, Phone, Calendar, Slack, Zap, Briefcase, Play, BookText, MessageSquare, BarChart, FileJson, Globe, Database, LoaderCircle, Send, Volume2, PhoneOff, Settings, Check, Square, Circle, Archive } from "lucide-react"
 import { DragDropContext, Droppable, Draggable, type DropResult } from 'react-beautiful-dnd';
+import { doc, onSnapshot, updateDoc, serverTimestamp, getDoc, collection, addDoc, deleteDoc, Timestamp } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 import { Button } from "@/components/ui/button"
 import {
@@ -34,7 +37,6 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import type { Agent, Document, ConversationStep, Integration, Voice, PostCallConfig, ExtractedVariable, ChatMessage } from "@/types"
-import { useLocalStorage } from "@/hooks/use-local-storage"
 import { AssistantChatbot } from "@/components/assistant-chatbot"
 import { useToast } from "@/hooks/use-toast"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -75,47 +77,63 @@ export default function AgentEditorPage() {
   const router = useRouter()
   const params = useParams()
   const { toast } = useToast()
-  const [agents, setAgents] = useLocalStorage<Agent[]>("agents", [])
-  const [agent, setAgent] = useState<Agent | undefined>(undefined)
+  const [agent, setAgent] = useState<Agent | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [hasUnpublishedChanges, setHasUnpublishedChanges] = useState(false);
+  const agentId = params.agentId as string;
+  const agentRef = useRef(doc(db, "agents", agentId));
 
 
   useEffect(() => {
-    const agentId = params.agentId as string;
-    if (agentId && agents.length > 0) {
-      const currentAgent = agents.find(a => a.id === agentId)
-      if (currentAgent) {
-        // Ensure conversationFlow is an array and has unique ids
-        if (typeof currentAgent.conversationFlow === 'string' || !currentAgent.conversationFlow) {
-            currentAgent.conversationFlow = [];
-        }
-        if (Array.isArray(currentAgent.conversationFlow)) {
-            currentAgent.conversationFlow = currentAgent.conversationFlow.map((step, index) => ({
+    if (!agentId) return;
+    
+    setIsLoading(true);
+    const unsubscribe = onSnapshot(agentRef.current, (doc) => {
+      if (doc.exists()) {
+        const data = doc.data();
+        const agentData = {
+          ...data,
+          id: doc.id,
+          createdAt: (data.createdAt as Timestamp)?.toDate().toISOString() || new Date().toISOString(),
+          lastEdited: (data.lastEdited as Timestamp)?.toDate().toISOString() || new Date().toISOString(),
+           conversationFlow: Array.isArray(data.conversationFlow) ? data.conversationFlow.map((step, index) => ({
                 ...step,
                 id: step.id || `${Date.now()}-${index}`
-            }));
-        }
-        setAgent(currentAgent)
-        if (currentAgent.status === 'published') {
-            setHasUnpublishedChanges(false);
-        }
+            })) : [],
+        } as Agent
+        setAgent(agentData);
+        // Compare with a previously saved 'published' state if needed
+        // For now, just reset on load
+        setHasUnpublishedChanges(false);
       } else {
-        notFound()
+        notFound();
       }
-    }
-  }, [params.agentId, agents])
+      setIsLoading(false);
+    }, (error) => {
+        console.error("Error fetching agent:", error);
+        toast({ title: "Error", description: "Failed to load agent data.", variant: "destructive"});
+        setIsLoading(false);
+    });
 
-  const updateAgent = (updatedFields: Partial<Agent>) => {
-    if (!agent) return;
-    const updatedAgent = { ...agent, ...updatedFields, lastEdited: new Date().toISOString() };
-    setAgent(updatedAgent);
-    setAgents(prevAgents => 
-      prevAgents.map(a => a.id === agent.id ? updatedAgent : a)
-    );
-     if (agent.status === 'published') {
-      setHasUnpublishedChanges(true);
+    return () => unsubscribe();
+  }, [agentId, toast]);
+
+  const updateAgent = useCallback(async (updatedFields: Partial<Agent>) => {
+    try {
+      await updateDoc(agentRef.current, {
+        ...updatedFields,
+        lastEdited: serverTimestamp()
+      });
+      // Optimistic update for UI, Firestore listener will sync true state
+      setAgent(prev => prev ? ({ ...prev, ...updatedFields, lastEdited: new Date().toISOString() }) : null);
+      if(agent?.status === 'published') {
+          setHasUnpublishedChanges(true);
+      }
+    } catch (error) {
+        console.error("Error updating agent:", error);
+        toast({ title: "Update Failed", description: "Could not save changes to Firestore.", variant: "destructive" });
     }
-  }
+  }, [agent?.status, toast]);
   
   const updateAgentConfig = (configSection: keyof NonNullable<Agent['configurations']>, key: string, value: any) => {
     if (!agent) return;
@@ -142,11 +160,9 @@ export default function AgentEditorPage() {
     updateAgent({ integrations: updatedIntegrations });
   }
 
-
-  const handlePublish = () => {
+  const handlePublish = async () => {
     if (!agent) return
-    
-    updateAgent({ status: 'published' });
+    await updateAgent({ status: 'published' });
     setHasUnpublishedChanges(false);
     toast({
       title: "Agent Published!",
@@ -154,35 +170,25 @@ export default function AgentEditorPage() {
     })
   }
   
-  const handleUnpublish = () => {
+  const handleUnpublish = async () => {
     if (!agent) return;
-    updateAgent({ status: 'draft' });
-    setHasUnpublishedChanges(false); // Reset changes status
+    await updateAgent({ status: 'draft' });
+    setHasUnpublishedChanges(false);
     toast({
       title: "Agent Unpublished",
       description: `"${agent.name}" is now a draft.`,
       variant: 'destructive'
     });
   };
-  
-  const handleSaveChanges = () => {
-    if(!agent) return;
-     // The useLocalStorage hook already saves on every change,
-     // but we can add an explicit save confirmation.
-     toast({
-        title: "Changes Saved",
-        description: "Your agent details have been updated.",
-     })
-  }
 
-  if (!agent) {
+  if (isLoading || !agent) {
     return (
         <div className="flex items-center justify-center h-full">
             <div className="text-muted-foreground">Loading agent...</div>
         </div>
     )
   }
-
+  
   const isPublished = agent.status === 'published' && !hasUnpublishedChanges;
   const lastSavedTime = new Date(agent.lastEdited).toLocaleTimeString([], { hour: '2-digit', minute:'2-digit' });
 
@@ -1356,9 +1362,22 @@ function PostCallTab({ agent, updateAgent }: { agent: Agent, updateAgent: (data:
 
 function TestAgentDialog({ agent }: { agent: Agent }) {
   const { toast } = useToast()
-  const [agents] = useLocalStorage<Agent[]>("agents", [])
+  const [agents, setAgents] = useState<Agent[]>([]);
   const [selectedAgentId, setSelectedAgentId] = useState<string | undefined>(agent.id)
   
+  useEffect(() => {
+    const q = query(collection(db, "agents"), orderBy("name"));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const agentsFromFirestore: Agent[] = [];
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            agentsFromFirestore.push({ ...data, id: doc.id } as Agent);
+        });
+        setAgents(agentsFromFirestore);
+    });
+    return () => unsubscribe();
+  }, []);
+
   const selectedAgent = agents.find(a => a.id === selectedAgentId) || agent;
   const isOutgoingAgent = selectedAgent?.callType === 'outgoing';
   const isIncomingAgent = !isOutgoingAgent;
@@ -1400,18 +1419,18 @@ function TestAgentDialog({ agent }: { agent: Agent }) {
 
         <Tabs defaultValue={"chat"} className="w-full">
             <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="chat" >Chat</TabsTrigger>
-                <TabsTrigger value="web-call" >Web Call</TabsTrigger>
-                <TabsTrigger value="phone-call" >Phone Call</TabsTrigger>
+                <TabsTrigger value="chat" disabled={isOutgoingAgent}>Chat</TabsTrigger>
+                <TabsTrigger value="web-call" disabled={isOutgoingAgent}>Web Call</TabsTrigger>
+                <TabsTrigger value="phone-call" disabled={isIncomingAgent}>Phone Call</TabsTrigger>
             </TabsList>
             <TabsContent value="chat">
-              <ChatTab agent={selectedAgent} />
+              {isIncomingAgent ? <ChatTab agent={selectedAgent} /> : <DisabledTestTab message="Chat testing is only available for incoming call type agents." />}
             </TabsContent>
             <TabsContent value="web-call">
-              <WebCallTab agent={selectedAgent} />
+              {isIncomingAgent ? <WebCallTab agent={selectedAgent} /> : <DisabledTestTab message="Web call testing is only available for incoming call type agents." />}
             </TabsContent>
             <TabsContent value="phone-call">
-              <PhoneCallTab agent={selectedAgent} />
+              {isOutgoingAgent ? <PhoneCallTab agent={selectedAgent} /> : <DisabledTestTab message="Phone call testing is only available for outgoing call type agents." />}
             </TabsContent>
         </Tabs>
       </DialogContent>

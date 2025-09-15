@@ -5,7 +5,7 @@
 import { useState, useTransition, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { PlusCircle, Sparkles, FileText, ShoppingCart, Headset, CornerDownLeft, MoreHorizontal, Pencil, Trash2, ArrowRightToLine, ArrowLeftFromLine } from "lucide-react"
-import { onSnapshot, collection, query, orderBy, addDoc, doc, deleteDoc, updateDoc, serverTimestamp, Timestamp } from "firebase/firestore";
+import { onSnapshot, collection, query, orderBy, addDoc, doc, deleteDoc, serverTimestamp, Timestamp } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button"
 import {
@@ -21,7 +21,6 @@ import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { enhancePromptAction, createAgentAction } from "@/app/actions"
 import type { Agent, AgentTemplate } from "@/types"
-import { useLocalStorage } from "@/hooks/use-local-storage"
 import { db } from "@/lib/firebase"
 import {
   Table,
@@ -56,8 +55,7 @@ const templates: (AgentTemplate & { category: string })[] = [
 export default function AgentBuilderPage() {
   const router = useRouter()
   const { toast } = useToast()
-  const [draftAgents, setDraftAgents] = useLocalStorage<Agent[]>("agents", [])
-  const [publishedAgents, setPublishedAgents] = useState<Agent[]>([]);
+  const [agents, setAgents] = useState<Agent[]>([]);
   const [firestoreError, setFirestoreError] = useState<string | null>(null);
   const [isEnhancing, startEnhanceTransition] = useTransition()
   const [isCreating, startCreateTransition] = useTransition()
@@ -81,12 +79,12 @@ export default function AgentBuilderPage() {
             lastEdited: (data.lastEdited as Timestamp)?.toDate().toISOString() || new Date().toISOString(),
           } as Agent);
         });
-        setPublishedAgents(agentsFromFirestore);
+        setAgents(agentsFromFirestore);
       },
       (error) => {
         console.error("Firestore snapshot error:", error);
         if (error.code === 'permission-denied') {
-          setFirestoreError("Permission Denied: Please check your Firestore security rules to allow read access to the 'agents' collection for authenticated users.");
+          setFirestoreError("Permission Denied: Please check your Firestore security rules to allow read access to the 'agents' collection.");
         } else {
           setFirestoreError(`An error occurred: ${error.message}`);
         }
@@ -121,43 +119,37 @@ export default function AgentBuilderPage() {
       }
       try {
         const result = await createAgentAction({ prompt })
-        const newAgent: Agent = {
-          id: `agent-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+        const newAgentData = {
           status: 'draft',
           callType: callType,
-          createdAt: new Date().toISOString(),
-          lastEdited: new Date().toISOString(),
           avatar: `https://picsum.photos/seed/${Math.random()}/100`,
           ...result,
           conversationFlow: Array.isArray(result.conversationFlow) ? result.conversationFlow : [],
-        }
-        setDraftAgents(prev => [...prev, newAgent])
-        toast({ title: "Agent Created", description: `Draft for "${newAgent.name}" has been saved.` })
+          createdAt: serverTimestamp(),
+          lastEdited: serverTimestamp(),
+        };
+
+        const docRef = await addDoc(collection(db, "agents"), newAgentData);
+
+        toast({ title: "Agent Created", description: `Draft for "${result.name}" has been saved.` })
         setPrompt("")
-        router.push(`/dashboard/agent-editor/${newAgent.id}`)
+        router.push(`/dashboard/agent-editor/${docRef.id}`)
       } catch (error) {
-        toast({ title: "Creation Failed", description: "Could not create the agent. Please try again.", variant: "destructive" })
+        console.error("Error creating agent:", error);
+        toast({ title: "Creation Failed", description: "Could not create the agent. Please check Firestore rules and try again.", variant: "destructive" })
       }
     })
   }
   
-  const handleDeleteAgent = async (agent: Agent) => {
-    if (agent.status === 'draft') {
-      setDraftAgents(prev => prev.filter(a => a.id !== agent.id));
-      toast({ title: "Draft Deleted", description: `"${agent.name}" has been removed.` });
-    } else {
-      try {
-        await deleteDoc(doc(db, "agents", agent.id));
-        toast({ title: "Agent Deleted", description: `Published agent "${agent.name}" has been deleted.` });
-      } catch (error) {
-        toast({ title: "Deletion Failed", description: "Could not delete the published agent.", variant: "destructive" });
-      }
+  const handleDeleteAgent = async (agentId: string, agentName: string) => {
+    try {
+      await deleteDoc(doc(db, "agents", agentId));
+      toast({ title: "Agent Deleted", description: `Agent "${agentName}" has been deleted.` });
+    } catch (error) {
+      console.error("Error deleting agent:", error)
+      toast({ title: "Deletion Failed", description: "Could not delete the agent.", variant: "destructive" });
     }
   };
-
-  const myAgents = [...draftAgents, ...publishedAgents].sort((a, b) => 
-    new Date(b.lastEdited).getTime() - new Date(a.lastEdited).getTime()
-  );
 
   const filteredTemplates = activeFilter === 'Popular' 
     ? templates.slice(0, 3) 
@@ -266,7 +258,7 @@ export default function AgentBuilderPage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {myAgents.length > 0 ? myAgents.map(agent => (
+                        {agents.length > 0 ? agents.map(agent => (
                             <TableRow key={agent.id}>
                                 <TableCell className="font-medium">
                                     <div className="font-semibold">{agent.name}</div>
@@ -298,7 +290,7 @@ export default function AgentBuilderPage() {
                                             <DropdownMenuItem onSelect={() => router.push(`/dashboard/agent-editor/${agent.id}`)}>
                                                 <Pencil className="mr-2 h-4 w-4" /> Edit
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem onSelect={() => handleDeleteAgent(agent)} className="text-red-500">
+                                            <DropdownMenuItem onSelect={() => handleDeleteAgent(agent.id, agent.name)} className="text-red-500">
                                                 <Trash2 className="mr-2 h-4 w-4" /> Delete
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>
@@ -321,6 +313,3 @@ export default function AgentBuilderPage() {
     </div>
   )
 }
-
-    
-    
