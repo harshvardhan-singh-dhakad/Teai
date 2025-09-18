@@ -53,7 +53,7 @@ import { cn } from "@/lib/utils"
 import { trainFromWebsiteAction, getAssistantResponse, textToSpeechAction, speechToTextAction } from "@/app/actions"
 import { runAgent } from '@/ai/flows/run-agent-flow';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Icons } from "@/components/icons";
+import { Icons } from "@/components/ui/icons";
 
 
 // Helper component to avoid "can't find node" error with react-beautiful-dnd in React 18 strict mode
@@ -355,7 +355,7 @@ function DetailsTab({ agent, updateAgent }: { agent: Agent; updateAgent: (data: 
                 </div>
                 <div className="flex items-center gap-4">
                      <div className="flex items-center space-x-2">
-                        <Switch id="dynamic-mode" />
+                        <Switch id="dynamic-mode" checked={agent.isDynamic} onCheckedChange={(checked) => updateAgent({ isDynamic: checked })} />
                         <Label htmlFor="dynamic-mode">Dynamic</Label>
                     </div>
                     <Button variant="outline" onClick={addStep}><Plus className="h-4 w-4 mr-2" />Add Step</Button>
@@ -1492,6 +1492,7 @@ function ChatTab({ agent }: { agent: Agent }) {
             lastEdited: agent.lastEdited,
             configurations: agent.configurations,
             callType: agent.callType,
+            isDynamic: agent.isDynamic,
         };
         
         const response = await fetch('/api/chat', {
@@ -1647,6 +1648,7 @@ function WebCallTab({ agent }: { agent: Agent }) {
                     lastEdited: agent.lastEdited,
                     configurations: agent.configurations,
                     callType: agent.callType,
+                    isDynamic: agent.isDynamic,
                 };
                 const { answer: aiText, audio: aiAudio } = await runAgent({ agent: serializableAgent, messages: currentTranscript });
                 addMessageToTranscript({ role: 'assistant', content: aiText });
@@ -1893,3 +1895,4 @@ function PhoneCallTab({ agent }: { agent: Agent }) {
     
 
     
+

@@ -103,6 +103,7 @@ export const AgentSchema = z.object({
   conversationFlow: z.array(ConversationStepSchema),
   status: z.enum(['draft', 'published']),
   avatar: z.string().optional(),
+  isDynamic: z.boolean().optional(),
   // Omitted for simplicity in the Zod schema: knowledgeBase, integrations, configurations, postCallConfigs
   createdAt: z.string(),
   lastEdited: z.string(),
