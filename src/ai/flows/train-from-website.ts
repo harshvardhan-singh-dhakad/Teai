@@ -16,6 +16,7 @@ import {
   type TrainFromWebsiteInput,
   type TrainFromWebsiteOutput,
 } from '@/types';
+import * as cheerio from 'cheerio';
 
 export async function trainFromWebsite(
   input: TrainFromWebsiteInput
@@ -23,8 +24,6 @@ export async function trainFromWebsite(
   return trainFromWebsiteFlow(input);
 }
 
-// This is a simplified simulation. A real implementation would use a library
-// like Cheerio or Puppeteer/Playwright to scrape the website content.
 const trainFromWebsiteFlow = ai.defineFlow(
   {
     name: 'trainFromWebsiteFlow',
@@ -33,24 +32,38 @@ const trainFromWebsiteFlow = ai.defineFlow(
   },
   async ({url}) => {
     try {
-      // Simulate fetching and parsing the website
-      const urlObject = new URL(url);
-      const domain = urlObject.hostname.replace('www.', '');
-      const title = domain.split('.')[0].replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch website: ${response.statusText}`);
+      }
+      const html = await response.text();
+      const $ = cheerio.load(html);
 
-      // Simulate extracting content
-      const placeholderContent = `This is simulated content scraped from ${domain}. In a real scenario, this would contain the actual text from the website's main body, including headings, paragraphs, and other relevant information. The purpose of this data is to train the AI agent to answer questions based on the website's content. We could extract product details, company information, FAQs, and contact details to make the agent highly knowledgeable.`;
+      // Remove script and style elements
+      $('script, style').remove();
+
+      const title = $('title').first().text() || $('h1').first().text() || new URL(url).hostname;
       
-      const charCount = placeholderContent.length;
+      // Extract text from the body, trying to be smart about it
+      let content = $('body').text();
+      
+      // Clean up the text: remove extra whitespace and newlines
+      content = content.replace(/\s\s+/g, ' ').replace(/\n+/g, '\n').trim();
+
+      const charCount = content.length;
+      
+      if (charCount < 100) {
+          console.warn(`Scraped content from ${url} is very short (${charCount} chars). It might not be effective for training.`);
+      }
 
       return {
         title: title,
-        content: placeholderContent,
+        content: content,
         charCount: charCount,
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error(`Error scraping website: ${url}`, error);
-      throw new Error('Failed to scrape website. Please check the URL and try again.');
+      throw new Error(`Failed to scrape website. Please check the URL and try again. Error: ${error.message}`);
     }
   }
 );
