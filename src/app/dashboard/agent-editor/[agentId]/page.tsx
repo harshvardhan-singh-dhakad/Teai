@@ -53,7 +53,7 @@ import { cn } from "@/lib/utils"
 import { trainFromWebsiteAction, getAssistantResponse, textToSpeechAction, speechToTextAction } from "@/app/actions"
 import { runAgent } from '@/ai/flows/run-agent-flow';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Icons } from "@/components/ui/icons";
+import { Icons } from "@/components/icons";
 
 
 // Helper component to avoid "can't find node" error with react-beautiful-dnd in React 18 strict mode
@@ -1896,3 +1896,7 @@ function PhoneCallTab({ agent }: { agent: Agent }) {
 
     
 
+
+
+
+    
