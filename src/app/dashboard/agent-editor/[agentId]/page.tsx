@@ -6,7 +6,7 @@ import React, { useEffect, useState, useRef, useTransition, useCallback } from "
 import { notFound, useRouter, useParams } from 'next/navigation'
 import { ArrowLeft, HardDriveUpload, FlaskConical, UploadCloud, FileText, Trash2, Eye, Languages, Mic, BrainCircuit, PhoneForwarded, Voicemail, Bot, Smile, Info, Plus, GripVertical, Phone, Calendar, Slack, Zap, Briefcase, Play, BookText, MessageSquare, BarChart, FileJson, Globe, Database, LoaderCircle, Send, Volume2, PhoneOff, Settings, Check, Square, Circle, Archive } from "lucide-react"
 import { DragDropContext, Droppable, Draggable, type DropResult } from 'react-beautiful-dnd';
-import { doc, onSnapshot, updateDoc, serverTimestamp, getDoc, collection, addDoc, deleteDoc, Timestamp } from "firebase/firestore";
+import { doc, onSnapshot, updateDoc, serverTimestamp, getDoc, collection, addDoc, deleteDoc, Timestamp, query, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 import { Button } from "@/components/ui/button"
@@ -1379,9 +1379,6 @@ function TestAgentDialog({ agent }: { agent: Agent }) {
   }, []);
 
   const selectedAgent = agents.find(a => a.id === selectedAgentId) || agent;
-  const isOutgoingAgent = selectedAgent?.callType === 'outgoing';
-  const isIncomingAgent = !isOutgoingAgent;
-
 
   return (
     <Dialog>
@@ -1419,18 +1416,18 @@ function TestAgentDialog({ agent }: { agent: Agent }) {
 
         <Tabs defaultValue={"chat"} className="w-full">
             <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="chat" disabled={isOutgoingAgent}>Chat</TabsTrigger>
-                <TabsTrigger value="web-call" disabled={isOutgoingAgent}>Web Call</TabsTrigger>
-                <TabsTrigger value="phone-call" disabled={isIncomingAgent}>Phone Call</TabsTrigger>
+                <TabsTrigger value="chat">Chat</TabsTrigger>
+                <TabsTrigger value="web-call">Web Call</TabsTrigger>
+                <TabsTrigger value="phone-call">Phone Call</TabsTrigger>
             </TabsList>
             <TabsContent value="chat">
-              {isIncomingAgent ? <ChatTab agent={selectedAgent} /> : <DisabledTestTab message="Chat testing is only available for incoming call type agents." />}
+              <ChatTab agent={selectedAgent} />
             </TabsContent>
             <TabsContent value="web-call">
-              {isIncomingAgent ? <WebCallTab agent={selectedAgent} /> : <DisabledTestTab message="Web call testing is only available for incoming call type agents." />}
+              <WebCallTab agent={selectedAgent} />
             </TabsContent>
             <TabsContent value="phone-call">
-              {isOutgoingAgent ? <PhoneCallTab agent={selectedAgent} /> : <DisabledTestTab message="Phone call testing is only available for outgoing call type agents." />}
+              <PhoneCallTab agent={selectedAgent} />
             </TabsContent>
         </Tabs>
       </DialogContent>
@@ -1892,5 +1889,7 @@ function PhoneCallTab({ agent }: { agent: Agent }) {
         </Card>
     )
 }
+
+    
 
     
