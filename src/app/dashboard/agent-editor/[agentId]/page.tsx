@@ -750,7 +750,7 @@ function IntegrationsTab({ agent, onIntegrationChange }: { agent: Agent, onInteg
                         <Card key={integration.id}>
                             <CardHeader>
                                 <div className="flex items-center gap-4">
-                                    <integration.icon className="h-8 w-8 text-primary" />
+                                    <integration.icon className="h-8 w-8" />
                                     <div>
                                         <CardTitle>{integration.name}</CardTitle>
                                         <Badge variant="outline" className="border-green-400 text-green-400 mt-1">{integration.usage}</Badge>
@@ -786,7 +786,7 @@ function IntegrationsTab({ agent, onIntegrationChange }: { agent: Agent, onInteg
                         <Card key={integration.id}>
                             <CardHeader>
                                 <div className="flex items-center gap-4">
-                                    <integration.icon className="h-8 w-8 text-primary" />
+                                    <integration.icon className="h-8 w-8" />
                                     <div>
                                         <CardTitle>{integration.name}</CardTitle>
                                         <Badge variant="outline" className="border-green-400 text-green-400 mt-1">{integration.usage}</Badge>
