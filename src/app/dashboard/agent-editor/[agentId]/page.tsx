@@ -1,5 +1,4 @@
 
-
 "use client"
 
 import React, { useEffect, useState, useRef, useTransition, useCallback } from "react"
@@ -228,7 +227,7 @@ export default function AgentEditorPage() {
                     Publish
                   </Button>
                 )}
-                 <Button>
+                 <Button className="bg-green-600 hover:bg-green-700 text-white">
                     Saved on {lastSavedTime}
                 </Button>
             </div>
@@ -1898,5 +1897,7 @@ function PhoneCallTab({ agent }: { agent: Agent }) {
 
 
 
+
+    
 
     
