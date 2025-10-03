@@ -32,7 +32,7 @@ export default function LandingPage() {
               Welcome to Teai, the ultimate platform for creating powerful and intelligent voice AI agents. Turn your ideas into reality with our intuitive builder and robust deployment tools.
             </p>
             <div className="mt-8 flex justify-center gap-4">
-              <Link href="/dashboard">
+              <Link href="/login">
                 <Button size="lg">Get Started for Free</Button>
               </Link>
               <a href="https://github.com" target="_blank" rel="noopener noreferrer">
