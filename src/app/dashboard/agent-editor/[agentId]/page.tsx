@@ -5,7 +5,7 @@ import { notFound, useRouter, useParams } from 'next/navigation'
 import { ArrowLeft, HardDriveUpload, FlaskConical, UploadCloud, FileText, Trash2, Eye, Languages, Mic, BrainCircuit, PhoneForwarded, Voicemail, Bot, Smile, Info, Plus, GripVertical, Phone, Calendar, Slack, Zap, Briefcase, Play, BookText, MessageSquare, BarChart, FileJson, Globe, Database, LoaderCircle, Send, Volume2, PhoneOff, Settings, Check, Square, Circle, Archive } from "lucide-react"
 import { DragDropContext, Droppable, Draggable, type DropResult } from 'react-beautiful-dnd';
 import { doc, onSnapshot, updateDoc, serverTimestamp, getDoc, collection, addDoc, deleteDoc, Timestamp, query, orderBy } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db, auth } from "@/lib/firebase";
 
 import { Button } from "@/components/ui/button"
 import {
@@ -330,7 +330,7 @@ function DetailsTab({ agent, updateAgent }: { agent: Agent; updateAgent: (data: 
                 </div>
                 <div className="flex items-center gap-4">
                      <div className="flex items-center space-x-2">
-                        <Switch id="dynamic-mode" checked={agent.isDynamic} onCheckedChange={(checked) => updateAgent({ isDynamic: checked })} />
+                        <Switch id="dynamic-mode" checked={agent.isDynamic || false} onCheckedChange={(checked) => updateAgent({ isDynamic: checked })} />
                         <Label htmlFor="dynamic-mode">Dynamic</Label>
                     </div>
                     <Button variant="outline" onClick={addStep}><Plus className="h-4 w-4 mr-2" />Add Step</Button>
@@ -686,7 +686,11 @@ function ChatTab({ agent }: { agent: Agent }) {
     setInput("");
     setIsThinking(true);
     try {
-        const { answer, audio } = await runAgent({ agent, messages: newMessages });
+        const { answer, audio } = await runAgent({ 
+          agent, 
+          messages: newMessages,
+          userId: auth.currentUser?.uid
+        });
         setMessages(prev => [...prev, { role: 'assistant', content: answer }]);
         if (audioRef.current) { audioRef.current.src = audio; audioRef.current.play(); }
     } catch (error) { console.error(error); } finally { setIsThinking(false); }

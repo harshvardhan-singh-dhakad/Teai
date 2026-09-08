@@ -177,6 +177,7 @@ export const RunAgentInputSchema = z.object({
     postCallConfigs: z.any().optional(),
   }).describe("The full agent object containing its definition and configuration."),
   messages: z.array(ChatMessageSchema).describe("The history of the conversation so far."),
+  userId: z.string().optional().describe("The UID of the user running the agent for billing/settings."),
 });
 export type RunAgentInput = z.infer<typeof RunAgentInputSchema>;
 

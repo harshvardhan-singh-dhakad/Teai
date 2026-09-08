@@ -8,7 +8,6 @@ import {
   type RunAgentOutput,
 } from '@/types';
 import { z } from 'zod';
-import { auth } from '@/lib/firebase';
 
 const staticPrompt = `You are a voice AI assistant. Your responses MUST strictly follow the conversational flow provided. Do not deviate.
 
@@ -101,7 +100,6 @@ const prompt = ai.definePrompt(
     const chosenPrompt = input.agent.isDynamic ? dynamicPrompt : staticPrompt;
     return {
       prompt: chosenPrompt,
-      context: [input],
     };
   }
 );
@@ -124,7 +122,7 @@ const runAgentFlow = ai.defineFlow(
       body: JSON.stringify({
         text: answer,
         voice: input.agent.configurations?.voice?.voiceId || 'Rachel',
-        userId: auth.currentUser?.uid || 'anonymous'
+        userId: input.userId || 'anonymous'
       })
     });
 

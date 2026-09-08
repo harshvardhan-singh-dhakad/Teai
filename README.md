@@ -5,26 +5,25 @@ Teai is a Next.js-based platform for building, managing, and deploying intellige
 ## Features
 
 - **Instant Agent Creation**: Go from a text prompt to a full agent using GenAI.
-- **Conversational Flows**: Build structured dialogue for static or dynamic AI interactions.
-- **ElevenLabs Integration**: Use state-of-the-art TTS with personal API key support.
-- **Multi-channel Testing**: Test your agents via Chat, Web Call, or Phone Call.
-- **Integrated Knowledge Base**: Train agents on website content or uploaded files.
-- **SaaS Ready**: Includes Billing, Analytics, and Admin management.
+- **Dynamic Conversational Flows**: AI agents that can stick to a script or deviate naturally.
+- **ElevenLabs Integration**: Personal API key support for custom voice usage.
+- **Knowledge Base**: Train agents on websites or document uploads.
+- **Dashboard**: Full analytics, user management, and agent builder.
 
 ## Tech Stack
 
 - **Framework**: Next.js 15 (App Router)
-- **AI**: Google Genkit, Gemini 2.5 Flash
+- **AI**: Google Genkit (Gemini 2.5 Flash)
 - **Voice**: ElevenLabs API
-- **Database/Auth**: Firebase (Firestore, Authentication)
-- **UI**: Tailwind CSS, ShadCN UI, Lucide Icons
+- **Database**: Firebase (Firestore, Auth)
+- **Styling**: Tailwind CSS, ShadCN UI
 
 ## Getting Started
 
 1.  **Clone the repository**:
     ```bash
-    git clone [your-repo-url]
-    cd teai
+    git clone https://github.com/harshvardhan-singh-dhakad/Teai.git
+    cd Teai
     ```
 
 2.  **Install dependencies**:
@@ -33,17 +32,16 @@ Teai is a Next.js-based platform for building, managing, and deploying intellige
     ```
 
 3.  **Setup Environment Variables**:
-    Create a `.env.local` file and add:
+    Create a `.env.local` file:
     ```
-    DEFAULT_ELEVENLABS_KEY=your_elevenlabs_key
+    DEFAULT_ELEVENLABS_KEY=your_key_here
     NEXT_PUBLIC_BASE_URL=http://localhost:9002
     ```
 
-4.  **Run the development server**:
+4.  **Run development server**:
     ```bash
     npm run dev
     ```
 
 ## License
-
 MIT
