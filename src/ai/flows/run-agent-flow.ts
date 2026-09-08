@@ -1,24 +1,14 @@
-
 'use server';
-/**
- * @fileOverview A flow to run a single conversation turn for a specific AI agent.
- *
- * - runAgent - A function that executes the agent's logic for one turn.
- * - runAgentStream - A function that executes the agent's logic for one turn and streams the response.
- * - RunAgentInput - The input type for the runAgent function.
- * - RunAgentOutput - The return type for the runAgent function.
- */
 
-import {ai} from '@/ai/genkit';
+import { ai } from '@/ai/genkit';
 import {
   RunAgentInputSchema,
   RunAgentOutputSchema,
   type RunAgentInput,
   type RunAgentOutput,
 } from '@/types';
-import {generate} from 'genkit';
-import {z} from 'zod';
-import {textToSpeech} from './tts-flow';
+import { z } from 'zod';
+import { auth } from '@/lib/firebase';
 
 const staticPrompt = `You are a voice AI assistant. Your responses MUST strictly follow the conversational flow provided. Do not deviate.
 
@@ -100,21 +90,14 @@ export async function runAgent(input: RunAgentInput): Promise<RunAgentOutput> {
   return runAgentFlow(input);
 }
 
-export async function runAgentStream(
-  input: RunAgentInput
-): Promise<ReadableStream<string>> {
-  return runAgentStreamFlow(input);
-}
-
 const prompt = ai.definePrompt(
   {
     name: 'runAgentPrompt',
-    input: {schema: RunAgentInputSchema},
-    output: {schema: z.object({ answer: z.string() })},
+    input: { schema: RunAgentInputSchema },
+    output: { schema: z.object({ answer: z.string() }) },
   },
   async input => {
-    // A simple helper to add numbers in Handlebars
-    ai.handlebars.registerHelper('add', (a, b) => a + b);
+    ai.handlebars.registerHelper('add', (a: number, b: number) => a + b);
     const chosenPrompt = input.agent.isDynamic ? dynamicPrompt : staticPrompt;
     return {
       prompt: chosenPrompt,
@@ -130,45 +113,27 @@ const runAgentFlow = ai.defineFlow(
     outputSchema: RunAgentOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
+    const { output } = await prompt(input);
     const answer = output!.answer;
 
-    // Generate speech and include it in the final output
-    const { audio } = await textToSpeech({ text: answer, voice: input.agent.configurations?.voice?.voiceId });
+    // Call our internal ElevenLabs TTS API
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:9002';
+    const ttsResponse = await fetch(`${baseUrl}/api/generate-voice`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text: answer,
+        voice: input.agent.configurations?.voice?.voiceId || 'Rachel',
+        userId: auth.currentUser?.uid || 'anonymous'
+      })
+    });
+
+    if (!ttsResponse.ok) {
+        throw new Error('Failed to generate ElevenLabs voice');
+    }
+
+    const { audio } = await ttsResponse.json();
 
     return { answer, audio };
-  }
-);
-
-const runAgentStreamFlow = ai.defineFlow(
-  {
-    name: 'runAgentStreamFlow',
-    inputSchema: RunAgentInputSchema,
-    outputSchema: z.string(),
-  },
-  async input => {
-    ai.handlebars.registerHelper('add', (a, b) => a + b);
-    const chosenPrompt = input.agent.isDynamic ? dynamicPrompt : staticPrompt;
-
-    const {stream, response} = ai.generate({
-      prompt: chosenPrompt,
-      model: ai.getModel(),
-      context: [input],
-      stream: true,
-    });
-    
-    const chunks: string[] = [];
-    for await (const chunk of stream) {
-      chunks.push(chunk.text);
-    }
-    
-    return new ReadableStream({
-      start(controller) {
-        for (const chunk of chunks) {
-          controller.enqueue(chunk);
-        }
-        controller.close();
-      }
-    });
   }
 );

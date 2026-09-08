@@ -1,5 +1,3 @@
-
-
 import {z} from 'zod';
 
 export const ConversationStepBranchSchema = z.object({
@@ -104,7 +102,6 @@ export const AgentSchema = z.object({
   status: z.enum(['draft', 'published']),
   avatar: z.string().optional(),
   isDynamic: z.boolean().optional(),
-  // Omitted for simplicity in the Zod schema: knowledgeBase, integrations, configurations, postCallConfigs
   createdAt: z.string(),
   lastEdited: z.string(),
 });
@@ -220,3 +217,14 @@ export const TrainFromWebsiteOutputSchema = z.object({
   charCount: z.number().describe('The character count of the content.'),
 });
 export type TrainFromWebsiteOutput = z.infer<typeof TrainFromWebsiteOutputSchema>;
+
+export type UserSettings = {
+  elevenlabsApiKey?: string;
+};
+
+export type UsageLog = {
+  timestamp: any;
+  textLength: number;
+  voiceUsed: string;
+  apiKeySource: 'user' | 'default';
+};
