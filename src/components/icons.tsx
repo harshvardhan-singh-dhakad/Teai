@@ -1,8 +1,9 @@
 
 import type { SVGProps } from "react";
-import { Bot, Globe, BarChart, CreditCard, Shield, Settings, FlaskConical, Github, Zap, Webhook, Database, Calendar, BookOpen, Mail, Sheet, FileText } from 'lucide-react';
+import { Bot, Globe, BarChart, CreditCard, Shield, Settings, FlaskConical, Github, Zap, Webhook, Database, Calendar, BookOpen, Mail, Sheet, FileText, Phone } from 'lucide-react';
 
 export const Icons = {
+  phone: Phone,
   logo: (props: SVGProps<SVGSVGElement>) => (
     <svg
       xmlns="http://www.w3.org/2000/svg"
