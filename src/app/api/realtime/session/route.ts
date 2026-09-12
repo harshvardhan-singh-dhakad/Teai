@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json().catch(() => ({}));
-    const model = process.env.OPENAI_REALTIME_MODEL || "gpt-realtime-1.5";
+    const model = process.env.OPENAI_LIVE_MODEL || "gpt-live-1";
     const instructions = typeof body.instructions === "string" ? body.instructions : undefined;
 
     const response = await fetch("https://api.openai.com/v1/realtime/client_secrets", {
