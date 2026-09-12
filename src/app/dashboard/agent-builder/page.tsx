@@ -21,7 +21,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { enhancePromptAction, createAgentAction } from "@/app/actions"
 import type { Agent, AgentTemplate } from "@/types"
-import { db } from "@/lib/firebase"
+import { db, auth } from "@/lib/firebase"
 import {
   Table,
   TableBody,
@@ -120,7 +120,11 @@ export default function AgentBuilderPage() {
       try {
         const result = await createAgentAction({ prompt })
         const newAgentData = {
+          userId: auth.currentUser?.uid || null,
           status: 'draft',
+          launchStatus: 'testing',
+          voiceMode: 'realtime',
+          phoneMode: 'none',
           callType: callType,
           avatar: `https://picsum.photos/seed/${Math.random()}/100`,
           ...result,
