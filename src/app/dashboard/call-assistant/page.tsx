@@ -42,8 +42,9 @@ export default function CallAssistantPage() {
     dataChannelRef.current = null;
     micRef.current?.getTracks().forEach(track => track.stop());
     micRef.current = null;
-    pcRef.current?.close();
+    const pc = pcRef.current;
     pcRef.current = null;
+    pc?.close();
     if (audioRef.current) audioRef.current.srcObject = null;
     setRunning(false);
     setStarting(false);
@@ -58,7 +59,10 @@ export default function CallAssistantPage() {
       unsubscribeAgents = undefined;
       setAgents([]);
       setSelectedId("");
-      if (!user) return;
+      if (!user) {
+        stopTest();
+        return;
+      }
 
       const q = query(collection(db, "agents"), where("userId", "==", user.uid));
       unsubscribeAgents = onSnapshot(q, snap => {
@@ -75,7 +79,7 @@ export default function CallAssistantPage() {
       unsubscribeAgents?.();
       unsubscribeAuth();
     };
-  }, []);
+  }, [stopTest]);
 
   useEffect(() => () => stopTest(), [stopTest]);
 
@@ -187,7 +191,7 @@ export default function CallAssistantPage() {
       setStatus("Ending voice test...");
       try {
         dc.send(JSON.stringify({ type: "session.close" }));
-        closeTimeoutRef.current = setTimeout(stopTest, 5000);
+        closeTimeoutRef.current = setTimeout(stopTest, 10000);
         return;
       } catch {
         // Fall through to local cleanup if the channel has already closed.
