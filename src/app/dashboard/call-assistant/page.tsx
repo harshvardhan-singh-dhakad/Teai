@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Bot, Mic, MicOff, Phone, PhoneCall, PhoneForwarded, ShieldCheck, Square, WandSparkles } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { onAuthStateChanged } from "firebase/auth";
 import { collection, onSnapshot, query, where } from "firebase/firestore";
+import { Bot, Mic, MicOff, Phone, PhoneCall, PhoneForwarded, ShieldCheck, Square, WandSparkles } from "lucide-react";
 import { auth, db } from "@/lib/firebase";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,57 +25,75 @@ export default function CallAssistantPage() {
   const [agents, setAgents] = useState<AgentOption[]>([]);
   const [selectedId, setSelectedId] = useState("");
   const [running, setRunning] = useState(false);
+  const [starting, setStarting] = useState(false);
   const [muted, setMuted] = useState(false);
   const [status, setStatus] = useState("Ready to test");
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const micRef = useRef<MediaStream | null>(null);
+  const dataChannelRef = useRef<RTCDataChannel | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const stopTest = useCallback(() => {
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
+      closeTimeoutRef.current = null;
+    }
+    dataChannelRef.current = null;
+    micRef.current?.getTracks().forEach(track => track.stop());
+    micRef.current = null;
+    pcRef.current?.close();
+    pcRef.current = null;
+    if (audioRef.current) audioRef.current.srcObject = null;
+    setRunning(false);
+    setStarting(false);
+    setMuted(false);
+    setStatus("Ready to test");
+  }, []);
 
   useEffect(() => {
-    const user = auth.currentUser;
-    if (!user) return;
-    const q = query(collection(db, "agents"), where("userId", "==", user.uid));
-    return onSnapshot(q, snap => {
-      const next = snap.docs.map(d => ({ id: d.id, ...(d.data() as Omit<AgentOption, "id">) }));
-      setAgents(next);
-      if (!selectedId && next[0]) setSelectedId(next[0].id);
+    let unsubscribeAgents: (() => void) | undefined;
+    const unsubscribeAuth = onAuthStateChanged(auth, user => {
+      unsubscribeAgents?.();
+      unsubscribeAgents = undefined;
+      setAgents([]);
+      setSelectedId("");
+      if (!user) return;
+
+      const q = query(collection(db, "agents"), where("userId", "==", user.uid));
+      unsubscribeAgents = onSnapshot(q, snap => {
+        const next = snap.docs.map(d => ({ id: d.id, ...(d.data() as Omit<AgentOption, "id">) }));
+        setAgents(next);
+        setSelectedId(current => current && next.some(a => a.id === current) ? current : next[0]?.id || "");
+      }, error => {
+        console.error("Could not load agents:", error);
+        setStatus("Could not load your agents. Please refresh and try again.");
+      });
     });
-  }, [selectedId]);
+
+    return () => {
+      unsubscribeAgents?.();
+      unsubscribeAuth();
+    };
+  }, []);
+
+  useEffect(() => () => stopTest(), [stopTest]);
 
   const agent = useMemo(() => agents.find(a => a.id === selectedId), [agents, selectedId]);
 
-  const instructions = useMemo(() => {
-    if (!agent) return "";
-    const knowledge = (agent.knowledgeBase || [])
-      .map(d => d.content || "")
-      .filter(Boolean)
-      .join("\n\n")
-      .slice(0, 24000);
-    return [
-      `You are ${agent.name}, a business voice assistant.`,
-      agent.description || "",
-      `Language: ${agent.configurations?.stt?.language || "en-US"}. Respond naturally in the user's language.`,
-      `Tone: ${agent.configurations?.behavior?.toneOfVoice || "professional"}.`,
-      `Style: ${agent.configurations?.behavior?.assistantStyle || "helpful and concise"}.`,
-      "Use the supplied company knowledge as the source of truth. If the answer is not present, say that you do not have enough information instead of inventing facts.",
-      knowledge ? `COMPANY KNOWLEDGE:\n${knowledge}` : "",
-    ].filter(Boolean).join("\n\n");
-  }, [agent]);
-
   async function startTest() {
+    if (!agent || starting || running) return;
+    setStarting(true);
     try {
-      setStatus("Requesting secure voice session...");
-      const tokenResponse = await fetch("/api/realtime/session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ instructions }),
-      });
-      const tokenData = await tokenResponse.json();
-      if (!tokenResponse.ok || !tokenData.clientSecret) throw new Error(tokenData.error || "Realtime session failed.");
+      setStatus("Requesting microphone access...");
+      const user = auth.currentUser;
+      if (!user) throw new Error("Please sign in again before starting a voice test.");
+
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      micRef.current = stream;
 
       const pc = new RTCPeerConnection();
       pcRef.current = pc;
-
       pc.ontrack = event => {
         if (audioRef.current) {
           audioRef.current.srcObject = event.streams[0];
@@ -82,37 +101,79 @@ export default function CallAssistantPage() {
         }
       };
       pc.onconnectionstatechange = () => {
-        if (["failed", "closed", "disconnected"].includes(pc.connectionState)) stopTest();
+        if (pc.connectionState === "failed" || pc.connectionState === "closed") stopTest();
       };
 
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      micRef.current = stream;
       stream.getTracks().forEach(track => pc.addTrack(track, stream));
-
       const dc = pc.createDataChannel("oai-events");
-      dc.onopen = () => {
-        dc.send(JSON.stringify({
-          type: "response.create",
-          response: { instructions: "Greet the user and wait for their first question." }
-        }));
-      };
+      dataChannelRef.current = dc;
+      dc.onmessage = event => {
+        let message: { type?: string; error?: { message?: string } };
+        try {
+          message = JSON.parse(event.data);
+        } catch {
+          return;
+        }
 
+        if (message.type === "session.started") {
+          dc.send(JSON.stringify({
+            type: "session.instructions.append",
+            event_id: crypto.randomUUID(),
+            delegation_id: null,
+            content: "Greet the user briefly in the configured language, introduce yourself, and then listen for their first question.",
+          }));
+          setStarting(false);
+          setRunning(true);
+          setStatus("Live test running — speak naturally.");
+        } else if (message.type === "session.closed") {
+          stopTest();
+        } else if (message.type === "error") {
+          setStatus(message.error?.message || "The voice session reported an error.");
+        }
+      };
+      dc.onclose = () => {
+        if (pcRef.current === pc) stopTest();
+      };
+      dc.onopen = () => setStatus("Connected. Starting your assistant...");
+
+      setStatus("Preparing secure WebRTC connection...");
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
+      if (pc.iceGatheringState !== "complete") {
+        await new Promise<void>((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            pc.removeEventListener("icegatheringstatechange", onIceGathering);
+            reject(new Error("Could not finish preparing the WebRTC connection. Please try again."));
+          }, 15000);
+          const onIceGathering = () => {
+            if (pc.iceGatheringState === "complete") {
+              clearTimeout(timeout);
+              pc.removeEventListener("icegatheringstatechange", onIceGathering);
+              resolve();
+            }
+          };
+          pc.addEventListener("icegatheringstatechange", onIceGathering);
+          onIceGathering();
+        });
+      }
 
-      const sdpResponse = await fetch(`https://api.openai.com/v1/realtime/calls?model=${encodeURIComponent(tokenData.model)}`, {
+      const idToken = await user.getIdToken();
+      setStatus("Starting the secure voice session...");
+      const sessionResponse = await fetch("/api/realtime/session", {
         method: "POST",
-        body: offer.sdp,
         headers: {
-          "Authorization": `Bearer ${tokenData.clientSecret}`,
-          "Content-Type": "application/sdp",
+          "Authorization": `Bearer ${idToken}`,
+          "Content-Type": "application/json",
         },
+        body: JSON.stringify({ agentId: agent.id, sdp: pc.localDescription?.sdp || "" }),
       });
-      if (!sdpResponse.ok) throw new Error("Could not connect the realtime voice session.");
-      await pc.setRemoteDescription({ type: "answer", sdp: await sdpResponse.text() });
+      const sessionData = await sessionResponse.json().catch(() => ({}));
+      if (!sessionResponse.ok || typeof sessionData?.transport?.sdp !== "string") {
+        throw new Error(sessionData.error || "Could not start the voice session.");
+      }
 
-      setRunning(true);
-      setStatus("Live test running — speak naturally.");
+      await pc.setRemoteDescription({ type: "answer", sdp: sessionData.transport.sdp });
+      setStatus("Connected. Starting your assistant...");
     } catch (error) {
       console.error(error);
       stopTest();
@@ -120,14 +181,19 @@ export default function CallAssistantPage() {
     }
   }
 
-  function stopTest() {
-    micRef.current?.getTracks().forEach(track => track.stop());
-    micRef.current = null;
-    pcRef.current?.close();
-    pcRef.current = null;
-    setRunning(false);
-    setMuted(false);
-    setStatus("Ready to test");
+  function endTest() {
+    const dc = dataChannelRef.current;
+    if (dc?.readyState === "open") {
+      setStatus("Ending voice test...");
+      try {
+        dc.send(JSON.stringify({ type: "session.close" }));
+        closeTimeoutRef.current = setTimeout(stopTest, 5000);
+        return;
+      } catch {
+        // Fall through to local cleanup if the channel has already closed.
+      }
+    }
+    stopTest();
   }
 
   function toggleMute() {
@@ -170,11 +236,13 @@ export default function CallAssistantPage() {
               <p className="mt-3 text-sm text-muted-foreground">{status}</p>
               <div className="mt-5 flex justify-center gap-2">
                 {!running ? (
-                  <Button onClick={startTest} disabled={!agent}><Mic className="mr-2 h-4 w-4" />Start voice test</Button>
+                  <Button onClick={startTest} disabled={!agent || starting}>
+                    <Mic className="mr-2 h-4 w-4" />{starting ? "Connecting..." : "Start voice test"}
+                  </Button>
                 ) : (
                   <>
                     <Button variant="outline" onClick={toggleMute}>{muted ? <MicOff className="mr-2 h-4 w-4" /> : <Mic className="mr-2 h-4 w-4" />}{muted ? "Unmute" : "Mute"}</Button>
-                    <Button variant="destructive" onClick={stopTest}><Square className="mr-2 h-4 w-4" />End test</Button>
+                    <Button variant="destructive" onClick={endTest}><Square className="mr-2 h-4 w-4" />End test</Button>
                   </>
                 )}
               </div>
