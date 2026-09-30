@@ -15,6 +15,7 @@ import {
 
 const navItems = [
   { href: "/dashboard/agent-builder", icon: Icons.bot, label: "Agent Builder" },
+  { href: "/dashboard/call-assistant", icon: Icons.phone, label: "AI Call Assistant" },
   { href: "/dashboard/integrations", icon: Icons.webhook, label: "Integrations" },
   { href: "/dashboard/deployment", icon: Icons.globe, label: "Deployment" },
   { href: "/dashboard/analytics", icon: Icons.barChart, label: "Analytics" },
