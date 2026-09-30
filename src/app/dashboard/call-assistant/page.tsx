@@ -124,7 +124,7 @@ export default function CallAssistantPage() {
             type: "session.instructions.append",
             event_id: crypto.randomUUID(),
             delegation_id: null,
-            content: "Greet the user briefly in the configured language, introduce yourself, and then listen for their first question.",
+            content: `Greet the user now in ${agent.configurations?.stt?.language || "the configured language"}. Introduce yourself briefly and ask how you can help. Then pause and listen.`,
           }));
           setStarting(false);
           setRunning(true);
